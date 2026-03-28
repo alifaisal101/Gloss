@@ -102,6 +102,7 @@ After each publish, Gloss triggers a projection update: the LLM reads the curren
 - Publish button posts all non-deleted comments to the Git platform and transitions the MR to Published
 - Repository settings panel: view all tracked repositories and edit their `PollCron` override directly from the UI
 - Constitution panel: add, edit, delete, and reorder constitution documents; button to trigger a one-time projection seed from current documents
+- Settings page: view and edit all provider configuration — Git platform, LLM provider, API keys, default poll schedule — stored encrypted in the database; changes take effect immediately without restarting the container
 - No login, no auth — localhost only
 
 ### Event Log
@@ -245,32 +246,16 @@ The `reason` field is free text the user can optionally provide when taking an a
 
 ## Configuration
 
-All configuration is supplied via environment variables. A `.env` file alongside `docker-compose.yml` is the recommended approach.
+Gloss is configured through a first-run setup wizard that appears the first time you open the UI. All sensitive values — Git platform tokens, LLM API keys, and provider URLs — are entered there and stored encrypted in the database. Nothing sensitive lives in environment variables or config files on disk.
 
-### Required
+The setup wizard collects:
 
-```env
-# Git platform
-GIT_PROVIDER=gitlab
-GIT_BASE_URL=https://gitlab.example.com
-GIT_TOKEN=<personal-access-token>
-GIT_PROJECTS=group/project-one,group/project-two
+- **Git provider** — platform type (GitLab, GitHub), base URL, and personal access token
+- **Projects** — the list of repositories to watch
+- **LLM provider** — provider type, API key, and model
+- **Poll schedule** — default cron expression used for all repositories unless overridden per-repository from the Repositories page
 
-# LLM provider
-LLM_PROVIDER=anthropic
-LLM_API_KEY=<api-key>
-LLM_MODEL=claude-sonnet-4-6
-```
-
-### Optional
-
-```env
-# Quartz cron expression used as the default poll schedule for all repositories.
-# Individual repositories can override this via their own schedule stored in the database.
-# Default: every 2 minutes
-DEFAULT_POLL_CRON=0 */2 * * * ?
-LLM_REASONING_ENABLED=true
-```
+Once setup is complete, Gloss begins polling immediately. All settings remain editable at any time through the **Settings** page in the UI — rotate keys, add or remove projects, switch providers, or adjust the poll schedule without restarting the container.
 
 ### GitLab token scopes
 
@@ -291,12 +276,10 @@ If you only want to review locally and never publish, `read_api` and `read_repos
 ```bash
 git clone <this-repo>
 cd gloss
-cp .env.example .env
-# edit .env with your tokens and project list
 docker compose up -d
 ```
 
-Open `http://localhost:5000` in your browser. Gloss will begin polling immediately.
+Open `http://localhost:5000` — the setup wizard will guide you through the rest.
 
 ---
 

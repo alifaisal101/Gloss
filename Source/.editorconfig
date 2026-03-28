@@ -1,0 +1,41 @@
+# Top-level entry to stop searching parent directories
+root = true
+
+[*.cs]
+# CA1711: Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1711.severity = none
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
+# CA1308: Replace the call to 'ToLowerInvariant' with 'ToUpperInvariant'
+dotnet_diagnostic.CA1308.severity = none
+
+# CA2007: Consider calling ConfigureAwait on the awaited task
+# Rationale: ASP.NET Core does not have a SynchronizationContext, so this is noise.
+dotnet_diagnostic.CA2007.severity = none
+
+# CA1707: Identifiers should not contain underscores
+# Rationale: OAuth 2.0 parameters (client_id, redirect_uri) rely on underscores.
+dotnet_diagnostic.CA1707.severity = none
+
+
+# CA1707: Avoid uninstantiated internal classes
+# Rationale: Class is never instantiated because DI uses it
+dotnet_diagnostic.CA1812.severity = none
+
+# Rule: Parameters generally use camelCase
+dotnet_naming_rule.parameters_must_be_camel_case.severity = suggestion
+dotnet_naming_rule.parameters_must_be_camel_case.symbols = parameters
+dotnet_naming_rule.parameters_must_be_camel_case.style = camel_case
+
+# EXCEPTION: Allow snake_case specifically for OAuth parameters
+# This defines a new naming style 'snake_case' and allows it for parameters
+dotnet_naming_style.snake_case.capitalization = snake_case
+
+dotnet_naming_rule.oauth_parameters_allow_snake_case.severity = none
+dotnet_naming_rule.oauth_parameters_allow_snake_case.symbols = parameters
+dotnet_naming_rule.oauth_parameters_allow_snake_case.style = snake_case
+
+# Define 'parameters' symbol group
+dotnet_naming_symbols.parameters.applicable_kinds = parameter
