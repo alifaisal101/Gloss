@@ -15,7 +15,8 @@ public record MergeRequestResponse(
     string SourceBranch,
     string TargetBranch,
     string AuthorUsername,
-    string State
+    string State,
+    string ProjectPath
 );
 
 public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<GlossApiFactory>, IAsyncLifetime
@@ -119,6 +120,20 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var body = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
 
         body.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetAll_ReturnsMrWithProjectPath()
+    {
+        var repoId = await SetupRepositoryAsync();
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+        await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
+
+        var mrs = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
+
+        mrs!.Single().ProjectPath.Should().Be("group/project-a");
     }
 
     [Fact]

@@ -11,15 +11,20 @@ namespace Gloss.IntegrationTests.Reviews;
 public record DraftCommentResponse(
     Guid Id,
     string FilePath,
-    int Line,
+    int LineNumber,
     string Body,
     string? Reasoning
 );
 
 public record MergeRequestDetailResponse(
     Guid Id,
+    string Title,
     string State,
-    IReadOnlyList<DraftCommentResponse> DraftComments
+    string ProjectPath,
+    string SourceBranch,
+    string TargetBranch,
+    string Diff,
+    IReadOnlyList<DraftCommentResponse> Comments
 );
 
 public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossApiFactory>, IAsyncLifetime
@@ -57,9 +62,25 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
         var mr = await _client.GetFromJsonAsync<MergeRequestDetailResponse>($"/api/merge-requests/{mrId}");
-        mr!.DraftComments.Should().HaveCount(2);
-        mr.DraftComments.Should().ContainSingle(c => c.FilePath == "src/Foo.cs" && c.Line == 10 && c.Reasoning == "Parameter can be null here");
-        mr.DraftComments.Should().ContainSingle(c => c.FilePath == "src/Bar.cs" && c.Line == 42);
+        mr!.Comments.Should().HaveCount(2);
+        mr.Comments.Should().ContainSingle(c => c.FilePath == "src/Foo.cs" && c.LineNumber == 10 && c.Reasoning == "Parameter can be null here");
+        mr.Comments.Should().ContainSingle(c => c.FilePath == "src/Bar.cs" && c.LineNumber == 42);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsDiffAndFullShape()
+    {
+        var mrId = await SetupPendingMrAsync();
+
+        var mr = await _client.GetFromJsonAsync<MergeRequestDetailResponse>($"/api/merge-requests/{mrId}");
+
+        mr!.Title.Should().Be("Fix bug");
+        mr.State.Should().Be("Pending");
+        mr.ProjectPath.Should().Be("group/project-a");
+        mr.SourceBranch.Should().Be("fix/bug");
+        mr.TargetBranch.Should().Be("main");
+        mr.Diff.Should().Be("diff --git a/src/Foo.cs");
+        mr.Comments.Should().BeEmpty();
     }
 
     [Fact]
