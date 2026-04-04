@@ -10,6 +10,6 @@ internal sealed class DraftCommentEntityConfiguration : IEntityTypeConfiguration
     {
         builder.ToTable("draft_comments");
         builder.HasKey(x => x.Id);
-        builder.HasIndex(x => x.MergeRequestId);
+        builder.HasOne<MergeRequest>().WithMany().HasForeignKey(x => x.MergeRequestId).OnDelete(DeleteBehavior.Cascade);
     }
 }

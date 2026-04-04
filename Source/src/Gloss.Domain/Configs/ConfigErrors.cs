@@ -15,4 +15,7 @@ public static class ConfigErrors
 
     public static readonly DomainError SecretRequired =
         new("Config.Validation.SecretRequired", "Access token and API key are required on first save.");
+
+    public static readonly DomainError MaskedSecretNotAccepted =
+        new("Config.Validation.MaskedSecret", "Do not submit a masked secret. Enter the real value or leave blank to keep the current one.");
 }

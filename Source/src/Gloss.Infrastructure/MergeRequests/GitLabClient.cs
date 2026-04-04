@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json.Serialization;
 using BuildingBlocks.Domain.Abstractions;
 using Gloss.Application.MergeRequests;
@@ -46,7 +47,19 @@ internal sealed class GitLabClient(
 
         if (diffs is null || diffs.Length == 0) return string.Empty;
 
-        return string.Join("\n", diffs.Select(d => d.Diff));
+        var sb = new StringBuilder();
+        foreach (var d in diffs)
+        {
+            sb.Append("diff --git a/").Append(d.OldPath).Append(" b/").AppendLine(d.NewPath);
+            if (d.NewFile)
+                sb.AppendLine("new file mode 100644");
+            else if (d.DeletedFile)
+                sb.AppendLine("deleted file mode 100644");
+            sb.Append("--- ").AppendLine(d.NewFile ? "/dev/null" : $"a/{d.OldPath}");
+            sb.Append("+++ ").AppendLine(d.DeletedFile ? "/dev/null" : $"b/{d.NewPath}");
+            sb.AppendLine(d.Diff.TrimEnd());
+        }
+        return sb.ToString();
     }
 
     private async Task<T?> SendAsync<T>(string url, string token, CancellationToken cancellationToken)
@@ -68,5 +81,10 @@ internal sealed class GitLabClient(
 
     private sealed record GitLabAuthorDto(string Username);
 
-    private sealed record GitLabDiffDto(string Diff);
+    private sealed record GitLabDiffDto(
+        [property: JsonPropertyName("old_path")] string OldPath,
+        [property: JsonPropertyName("new_path")] string NewPath,
+        string Diff,
+        [property: JsonPropertyName("new_file")] bool NewFile,
+        [property: JsonPropertyName("deleted_file")] bool DeletedFile);
 }

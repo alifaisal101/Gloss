@@ -1,4 +1,5 @@
 using Gloss.Domain.MergeRequests;
+using Gloss.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,5 +13,6 @@ internal sealed class MergeRequestEntityConfiguration : IEntityTypeConfiguration
         builder.HasKey(x => x.Id);
         builder.HasIndex(x => new { x.RepositoryId, x.ProviderIid }).IsUnique();
         builder.Property(x => x.State).HasConversion<int>();
+        builder.HasOne<Repository>().WithMany().HasForeignKey(x => x.RepositoryId).OnDelete(DeleteBehavior.Cascade);
     }
 }

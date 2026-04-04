@@ -1,5 +1,6 @@
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Abstractions;
+using BuildingBlocks.Domain.Errors;
 using BuildingBlocks.Domain.Models.Secrets;
 using BuildingBlocks.Domain.Results;
 using Gloss.Application.Jobs;
@@ -80,6 +81,11 @@ public sealed class SaveConfigHandler(
         error = null;
         if (!string.IsNullOrWhiteSpace(incoming))
         {
+            if (incoming.Contains('*'))
+            {
+                error = ConfigErrors.MaskedSecretNotAccepted;
+                return null;
+            }
             var result = Secret.Create(incoming.Trim());
             if (result.IsFailure) { error = result.Error; return null; }
             return encryptor.Encrypt(result.Value);

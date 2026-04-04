@@ -8,10 +8,12 @@ function normalize(c) {
   return {
     gitProvider: c.gitProvider ?? 'gitlab',
     gitBaseUrl: c.gitBaseUrl ?? '',
-    gitToken: c.gitToken ?? null,
+    gitToken: null,
+    gitTokenSet: c.gitTokenSet ?? false,
     gitProjects: c.gitProjects ?? [],
     llmProvider: c.llmProvider ?? 'anthropic',
-    llmApiKey: c.llmApiKey ?? null,
+    llmApiKey: null,
+    llmApiKeySet: c.llmApiKeySet ?? false,
     llmModel: c.llmModel ?? '',
     llmReasoningEnabled: c.llmReasoningEnabled ?? true,
     defaultPollCron: c.defaultPollCron ?? '',
@@ -42,7 +44,12 @@ export default function Settings() {
     setSaving(true);
     setError(null);
     try {
-      await api.updateConfig({ ...form, gitProjects: form.gitProjects.filter(Boolean) });
+      await api.updateConfig({
+        ...form,
+        gitToken: form.gitToken || null,
+        llmApiKey: form.llmApiKey || null,
+        gitProjects: form.gitProjects.filter(Boolean),
+      });
       const updated = normalize(await api.getConfig());
       setSettings(updated);
       setForm(updated);
@@ -54,10 +61,13 @@ export default function Settings() {
     }
   }
 
-  const secretsUnchanged = (form?.gitToken || null) === (settings?.gitToken || null) &&
-    (form?.llmApiKey || null) === (settings?.llmApiKey || null);
-  const nonSecretsDirty = form && settings && JSON.stringify({ ...form, gitToken: null, llmApiKey: null }) !== JSON.stringify({ ...settings, gitToken: null, llmApiKey: null });
-  const isDirty = !secretsUnchanged || nonSecretsDirty;
+  const secretsDirty = form?.gitToken !== null || form?.llmApiKey !== null;
+  const nonSecretsDirty = form && settings && JSON.stringify({
+    ...form, gitToken: null, llmApiKey: null, gitTokenSet: null, llmApiKeySet: null,
+  }) !== JSON.stringify({
+    ...settings, gitToken: null, llmApiKey: null, gitTokenSet: null, llmApiKeySet: null,
+  });
+  const isDirty = secretsDirty || nonSecretsDirty;
 
   if (loading) return <div className="loading">Loading…</div>;
   if (error && !form) return <div className="error">Failed to load: {error.message}</div>;
@@ -95,12 +105,13 @@ export default function Settings() {
             </Field>
             <Field
               label="Personal Access Token"
-              hint={form.gitProvider === 'gitlab' ? 'Required scope: api (read_api is enough to fetch MRs, but publishing comments requires api). Leave blank to keep the current token.' : 'Leave blank to keep the current token.'}
+              hint={form.gitProvider === 'gitlab' ? 'Required scope: api (read_api to fetch MRs, api to publish comments)' : undefined}
             >
               <SecretInput
-                value={form.gitToken ?? ''}
+                value={form.gitToken}
+                isSet={form.gitTokenSet}
                 onChange={v => set('gitToken', v)}
-                placeholder="leave blank to keep current"
+                placeholder="glpat-…"
               />
             </Field>
             <Field label="Projects to watch" hint="One project path per line (e.g. group/repo)">
@@ -122,11 +133,12 @@ export default function Settings() {
                 {LLM_PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </Field>
-            <Field label="API Key" hint="Leave blank to keep the current key">
+            <Field label="API Key">
               <SecretInput
-                value={form.llmApiKey ?? ''}
+                value={form.llmApiKey}
+                isSet={form.llmApiKeySet}
                 onChange={v => set('llmApiKey', v)}
-                placeholder="leave blank to keep current"
+                placeholder="sk-ant-…"
               />
             </Field>
             <Field label="Model" hint="e.g. claude-sonnet-4-6">
@@ -182,8 +194,21 @@ function Field({ label, hint, children }) {
   );
 }
 
-function SecretInput({ value, onChange, placeholder }) {
+function SecretInput({ value, isSet, onChange, placeholder }) {
+  const editing = value !== null || !isSet;
   const [revealed, setRevealed] = useState(false);
+
+  if (!editing) {
+    return (
+      <div className="secret-input-wrap">
+        <span className="secret-set-indicator">••••••••••••</span>
+        <button className="btn-ghost btn-sm" type="button" onClick={() => onChange('')}>
+          Change
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="secret-input-wrap">
       <input
@@ -191,10 +216,17 @@ function SecretInput({ value, onChange, placeholder }) {
         value={value ?? ''}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
+        autoFocus={isSet}
+        autoComplete="off"
       />
-      <button className="btn-ghost btn-sm" onClick={() => setRevealed(r => !r)}>
+      <button className="btn-ghost btn-sm" type="button" onClick={() => setRevealed(r => !r)}>
         {revealed ? 'Hide' : 'Show'}
       </button>
+      {isSet && (
+        <button className="btn-ghost btn-sm" type="button" onClick={() => { onChange(null); setRevealed(false); }}>
+          Cancel
+        </button>
+      )}
     </div>
   );
 }
