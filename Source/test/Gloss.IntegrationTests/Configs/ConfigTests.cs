@@ -4,9 +4,9 @@ using FluentAssertions;
 using Npgsql;
 using Xunit;
 
-namespace Gloss.IntegrationTests.Settings;
+namespace Gloss.IntegrationTests.Configs;
 
-public record SettingsRequest(
+public record ConfigRequest(
     string GitProvider,
     string GitBaseUrl,
     string GitToken,
@@ -18,7 +18,7 @@ public record SettingsRequest(
     string DefaultPollCron
 );
 
-public record SettingsResponse(
+public record ConfigResponse(
     bool IsConfigured,
     string? GitProvider,
     string? GitBaseUrl,
@@ -31,45 +31,38 @@ public record SettingsResponse(
     string? DefaultPollCron
 );
 
-public sealed class SettingsTests : IClassFixture<GlossApiFactory>, IAsyncLifetime
+public sealed class ConfigTests(GlossApiFactory factory) : IClassFixture<GlossApiFactory>, IAsyncLifetime
 {
-    private readonly GlossApiFactory _factory;
-    private readonly HttpClient _client;
+    private readonly HttpClient _client = factory.CreateClient();
 
-    public SettingsTests(GlossApiFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
-
-    public async Task InitializeAsync() => await _factory.ResetAsync();
+    public async Task InitializeAsync() => await factory.ResetAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task Get_WhenNoSettingsSaved_ReturnsNotConfigured()
+    public async Task Get_WhenNoConfigSaved_ReturnsNotConfigured()
     {
-        var response = await _client.GetAsync("/api/settings");
+        var response = await _client.GetAsync("/api/config");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<SettingsResponse>();
+        var body = await response.Content.ReadFromJsonAsync<ConfigResponse>();
         body!.IsConfigured.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Put_WithValidSettings_ReturnsOk()
+    public async Task Put_WithValidConfig_ReturnsOk()
     {
-        var response = await _client.PutAsJsonAsync("/api/settings", ValidSettings());
+        var response = await _client.PutAsJsonAsync("/api/config", ValidConfig());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task Get_AfterSavingSettings_MasksSecrets()
+    public async Task Get_AfterSavingConfig_MasksSecrets()
     {
-        await _client.PutAsJsonAsync("/api/settings", ValidSettings());
+        await _client.PutAsJsonAsync("/api/config", ValidConfig());
 
-        var response = await _client.GetAsync("/api/settings");
-        var body = await response.Content.ReadFromJsonAsync<SettingsResponse>();
+        var response = await _client.GetAsync("/api/config");
+        var body = await response.Content.ReadFromJsonAsync<ConfigResponse>();
 
         body!.IsConfigured.Should().BeTrue();
         body.GitToken.Should().NotBe("glpat-secret-token");
@@ -79,12 +72,12 @@ public sealed class SettingsTests : IClassFixture<GlossApiFactory>, IAsyncLifeti
     [Fact]
     public async Task Put_SecretsAreStoredEncrypted()
     {
-        await _client.PutAsJsonAsync("/api/settings", ValidSettings());
+        await _client.PutAsJsonAsync("/api/config", ValidConfig());
 
-        await using var conn = new NpgsqlConnection(_factory.ConnectionString);
+        await using var conn = new NpgsqlConnection(factory.ConnectionString);
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT git_token, llm_api_key FROM settings LIMIT 1";
+        cmd.CommandText = "SELECT git_token, llm_api_key FROM configs LIMIT 1";
         await using var reader = await cmd.ExecuteReaderAsync();
         await reader.ReadAsync();
 
@@ -92,7 +85,7 @@ public sealed class SettingsTests : IClassFixture<GlossApiFactory>, IAsyncLifeti
         reader.GetString(1).Should().NotBe("sk-ant-secret-key");
     }
 
-    private static SettingsRequest ValidSettings() => new(
+    private static ConfigRequest ValidConfig() => new(
         GitProvider: "gitlab",
         GitBaseUrl: "https://gitlab.example.com",
         GitToken: "glpat-secret-token",

@@ -30,9 +30,9 @@ export const api = {
   updateRepository: (id, pollCron) =>
     request('PATCH', `/repositories/${id}`, { pollCron }),
 
-  // Settings
-  getSettings: () => request('GET', '/settings'),
-  updateSettings: (settings) => request('PUT', '/settings', settings),
+  // Config
+  getConfig: () => request('GET', '/config'),
+  updateConfig: (config) => request('PUT', '/config', config),
 
   // Constitution
   listConstitution: () => request('GET', '/constitution'),

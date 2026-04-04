@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <data name="General.NullValue"><value>The specified value is null.</value></data>
+  <data name="General.NotFound"><value>The requested resource was not found.</value></data>
+  <data name="General.Conflict"><value>The operation conflicts with the current state.</value></data>
+  <data name="General.Unauthorized"><value>Authentication is required.</value></data>
+  <data name="General.Forbidden"><value>You do not have permission to perform this action.</value></data>
+  <data name="General.ValidationFailed"><value>One or more validation errors occurred.</value></data>
+  <data name="Server.InternalError"><value>An unexpected error occurred. Please try again later.</value></data>
+</root>

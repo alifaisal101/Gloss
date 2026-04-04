@@ -39,3 +39,6 @@ dotnet_naming_rule.oauth_parameters_allow_snake_case.style = snake_case
 
 # Define 'parameters' symbol group
 dotnet_naming_symbols.parameters.applicable_kinds = parameter
+
+[**/Migrations/*.cs]
+generated_code = true

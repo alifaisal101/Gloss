@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'BuildingBlocks.Infrastructure.EfCore.Generator'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)BuildingBlocks/BuildingBlocks.Infrastructure.EfCore.Generator/BuildingBlocks.Infrastructure.EfCore.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

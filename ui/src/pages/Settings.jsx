@@ -4,6 +4,20 @@ import { api } from '../api/client.js';
 const GIT_PROVIDERS = ['gitlab', 'github'];
 const LLM_PROVIDERS = ['anthropic', 'openai', 'ollama'];
 
+function normalize(c) {
+  return {
+    gitProvider: c.gitProvider ?? 'gitlab',
+    gitBaseUrl: c.gitBaseUrl ?? '',
+    gitToken: c.gitToken ?? '',
+    gitProjects: c.gitProjects ?? [],
+    llmProvider: c.llmProvider ?? 'anthropic',
+    llmApiKey: c.llmApiKey ?? '',
+    llmModel: c.llmModel ?? '',
+    llmReasoningEnabled: c.llmReasoningEnabled ?? true,
+    defaultPollCron: c.defaultPollCron ?? '',
+  };
+}
+
 export default function Settings() {
   const [settings, setSettings] = useState(null);
   const [form, setForm] = useState(null);
@@ -13,8 +27,8 @@ export default function Settings() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.getSettings()
-      .then(s => { setSettings(s); setForm(s); })
+    api.getConfig()
+      .then(c => { const s = normalize(c); setSettings(s); setForm(s); })
       .catch(setError)
       .finally(() => setLoading(false));
   }, []);
@@ -28,7 +42,8 @@ export default function Settings() {
     setSaving(true);
     setError(null);
     try {
-      const updated = await api.updateSettings(form);
+      await api.updateConfig(form);
+      const updated = normalize(await api.getConfig());
       setSettings(updated);
       setForm(updated);
       setSaved(true);

@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\BuildingBlocks.Infrastructure.Api\BuildingBlocks.Infrastructure.Api.csproj" />
+    <ProjectReference Include="..\Gloss.Infrastructure\Gloss.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

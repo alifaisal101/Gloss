@@ -102,7 +102,7 @@ After each publish, Gloss triggers a projection update: the LLM reads the curren
 - Publish button posts all non-deleted comments to the Git platform and transitions the MR to Published
 - Repository settings panel: view all tracked repositories and edit their `PollCron` override directly from the UI
 - Constitution panel: add, edit, delete, and reorder constitution documents; button to trigger a one-time projection seed from current documents
-- Settings page: view and edit all provider configuration — Git platform, LLM provider, API keys, default poll schedule — stored encrypted in the database; changes take effect immediately without restarting the container
+- Config page: view and edit all provider configuration — Git platform, LLM provider, API keys, default poll schedule — stored encrypted in the database; changes take effect immediately without restarting the container
 - No login, no auth — localhost only
 
 ### Event Log
@@ -255,7 +255,7 @@ The setup wizard collects:
 - **LLM provider** — provider type, API key, and model
 - **Poll schedule** — default cron expression used for all repositories unless overridden per-repository from the Repositories page
 
-Once setup is complete, Gloss begins polling immediately. All settings remain editable at any time through the **Settings** page in the UI — rotate keys, add or remove projects, switch providers, or adjust the poll schedule without restarting the container.
+Once setup is complete, Gloss begins polling immediately. All config remains editable at any time through the **Config** page in the UI — rotate keys, add or remove projects, switch providers, or adjust the poll schedule without restarting the container.
 
 ### GitLab token scopes
 
@@ -320,3 +320,14 @@ Each repository is cloned in full and kept up to date via `git fetch`. For large
 
 **Context window limits**
 For very large MRs or files, the review context may exceed the LLM's context window. A chunking strategy — reviewing files independently and merging results — is the planned mitigation.
+
+**Context Per Project**
+Save context per project to not read the source code everytime
+
+**Configurable Prompt**
+Appsettings value to configure the prompt sent to claude sdk
+
+**Support for gitlab CICD trigger**
+Claude auto pushes Reviews, separate from your reviews
+
+**Force pull MRs**

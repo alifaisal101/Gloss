@@ -1,11 +1,22 @@
 <Solution>
+  <Folder Name="/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Domain/BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Application/BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Infrastructure.EfCore/BuildingBlocks.Infrastructure.EfCore.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Infrastructure.Api/BuildingBlocks.Infrastructure.Api.csproj" />
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Gloss.Domain/Gloss.Domain.csproj" />
+    <Project Path="src/Gloss.Application/Gloss.Application.csproj" />
+    <Project Path="src/Gloss.Infrastructure/Gloss.Infrastructure.csproj" />
     <Project Path="src/Gloss.Api/Gloss.Api.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/Gloss.IntegrationTests/Gloss.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path="..\README.md" />
     <File Path=".editorconfig" />
     <File Path="nuget.config" />
     <File Path="Directory.Packages.props" />

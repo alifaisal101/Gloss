@@ -1,0 +1,78 @@
+// ═══════════════════════════════════════════════════════════════
+// UNLEASH INTEGRATION — Self-Hosted Open Source Feature Flags
+// ═══════════════════════════════════════════════════════════════
+//
+// Unleash (https://github.com/Unleash/unleash) is the most popular
+// open-source feature flag platform. Self-host for free.
+//
+// Setup:
+//   1. docker run -p 4242:4242 unleashorg/unleash-server
+//   2. dotnet add package Unleash.Client
+//   3. Uncomment this file and register in FeatureFlagConfiguration
+//   4. Configure appsettings:
+//      "FeatureFlags": {
+//        "Provider": "unleash",
+//        "UnleashApiUrl": "http://localhost:4242/api",
+//        "UnleashApiToken": "default:development.your-token",
+//        "UnleashAppName": "my-service",
+//        "UnleashEnvironment": "development"
+//      }
+
+/*
+using BuildingBlocks.Application.Features;
+using Unleash;
+using Unleash.ClientFactory;
+
+namespace BuildingBlocks.Infrastructure.Api.Features;
+
+internal sealed class UnleashFeatureService : IFeatureService, IAsyncDisposable
+{
+    private readonly IUnleash _unleash;
+
+    public UnleashFeatureService(FeatureFlagConfig config)
+    {
+        var settings = new UnleashSettings
+        {
+            AppName = config.UnleashAppName ?? "modular-monolith",
+            UnleashApi = new Uri(config.UnleashApiUrl!),
+            CustomHttpHeaders = new Dictionary<string, string>
+            {
+                ["Authorization"] = config.UnleashApiToken!
+            },
+            Environment = config.UnleashEnvironment ?? "development"
+        };
+
+        _unleash = new DefaultUnleash(settings);
+    }
+
+    public Task<bool> IsEnabledAsync(string featureName, CancellationToken ct = default) =>
+        Task.FromResult(_unleash.IsEnabled(featureName));
+
+    public Task<bool> IsEnabledForAsync(string featureName, string userId, CancellationToken ct = default)
+    {
+        var context = new UnleashContext { UserId = userId };
+        return Task.FromResult(_unleash.IsEnabled(featureName, context));
+    }
+
+    public Task<bool> IsEnabledForAsync(
+        string featureName, string userId, IEnumerable<string> groups, CancellationToken ct = default)
+    {
+        var context = new UnleashContext
+        {
+            UserId = userId,
+            Properties = groups
+                .Where(g => g.Contains(':'))
+                .ToDictionary(
+                    g => g.Split(':')[0],
+                    g => g.Split(':')[1])
+        };
+        return Task.FromResult(_unleash.IsEnabled(featureName, context));
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _unleash?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}
+*/

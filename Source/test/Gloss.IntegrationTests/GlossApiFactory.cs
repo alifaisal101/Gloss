@@ -1,5 +1,9 @@
+using Gloss.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -18,16 +22,20 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         builder.UseEnvironment("Testing");
 
-        builder.ConfigureServices(services =>
-        {
-            // Database and service overrides will be added here
-            // as features are implemented TDD-style.
-        });
+        builder.ConfigureAppConfiguration(config =>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:GlossDb"] = ConnectionString,
+            }));
     }
 
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GlossDbContext>();
+        await db.Database.MigrateAsync();
     }
 
     public async Task ResetAsync()
