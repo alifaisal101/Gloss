@@ -4,7 +4,9 @@ using BuildingBlocks.Infrastructure.Api.Health;
 using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Secrets;
 using Gloss.Api.Configs;
+using Gloss.Api.Repositories;
 using Gloss.Application.Configs;
+using Gloss.Application.Repositories;
 using Gloss.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddBuildingBlocksApi(builder.Configuration);
 builder.Services.AddSecretEncryption(builder.Configuration);
 builder.Services.AddConfigApplication();
+builder.Services.AddRepositoryApplication();
 builder.Services.AddGlossInfrastructure(builder.Configuration);
 
 var app = builder.Build();
@@ -22,5 +25,6 @@ app.UseBuildingBlocksApi(builder.Configuration);
 app.MapBuildingBlocksDocumentation();
 app.MapBuildingBlocksHealthChecks();
 app.MapConfigEndpoints();
+app.MapRepositoryEndpoints();
 
 await app.RunAsync().ConfigureAwait(false);

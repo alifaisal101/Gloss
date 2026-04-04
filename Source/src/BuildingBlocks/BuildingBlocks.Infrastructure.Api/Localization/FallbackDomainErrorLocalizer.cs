@@ -25,7 +25,7 @@ internal sealed partial class FallbackDomainErrorLocalizer(
     : IDomainErrorLocalizer
 {
     private static readonly ResourceManager CoreResources =
-        new("BuildingBlocks.Infrastructure.Api.Localization.Resources.Errors", typeof(IErrors).Assembly);
+        new("BuildingBlocks.Infrastructure.Api.Localization.Resources.IErrors", typeof(IErrors).Assembly);
 
     private static readonly CultureInfo EnglishFallback = new("en");
 

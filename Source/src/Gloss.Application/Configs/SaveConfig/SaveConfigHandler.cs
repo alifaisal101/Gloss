@@ -3,11 +3,13 @@ using BuildingBlocks.Domain.Abstractions;
 using BuildingBlocks.Domain.Models.Secrets;
 using BuildingBlocks.Domain.Results;
 using Gloss.Domain.Configs;
+using Gloss.Domain.Repositories;
 
 namespace Gloss.Application.Configs.SaveConfig;
 
 public sealed class SaveConfigHandler(
     IConfigRepository repository,
+    IRepositoryRepository repositoryRepository,
     IDomainContext domainContext,
     ISecretEncryptor encryptor)
 {
@@ -64,7 +66,24 @@ public sealed class SaveConfigHandler(
         }
 
         domainContext.Save<Config, Guid>(config);
+
+        await SyncRepositoriesAsync(command.GitProjects, gitProviderResult.Value.Value, cancellationToken).ConfigureAwait(false);
+
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
+    }
+
+    private async Task SyncRepositoriesAsync(IReadOnlyList<string> projects, string provider, CancellationToken cancellationToken)
+    {
+        var existingRepos = await repositoryRepository.ListAsync(cancellationToken).ConfigureAwait(false);
+
+        var existingPaths = existingRepos.Select(r => r.ProjectPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newPaths = projects.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var repo in existingRepos.Where(r => !newPaths.Contains(r.ProjectPath)))
+            domainContext.Remove<Repository, Guid>(repo);
+
+        foreach (var path in projects.Where(p => !existingPaths.Contains(p)))
+            domainContext.Save<Repository, Guid>(Repository.Create(path, provider));
     }
 }
