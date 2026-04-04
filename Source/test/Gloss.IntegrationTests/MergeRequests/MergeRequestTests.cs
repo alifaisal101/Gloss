@@ -14,7 +14,8 @@ public record MergeRequestResponse(
     string Title,
     string SourceBranch,
     string TargetBranch,
-    string AuthorUsername
+    string AuthorUsername,
+    string State
 );
 
 public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<GlossApiFactory>, IAsyncLifetime
@@ -83,11 +84,55 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
     }
 
     [Fact]
+    public async Task Pull_SetsMrStateToPending()
+    {
+        var repoId = await SetupRepositoryAsync();
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+
+        await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
+
+        var body = await _client.GetFromJsonAsync<MergeRequestResponse[]>($"/api/repositories/{repoId}/merge-requests");
+        body!.Single().State.Should().Be("Pending");
+    }
+
+    [Fact]
     public async Task Pull_WithUnknownRepositoryId_ReturnsNotFound()
     {
         var response = await _client.PostAsync($"/api/repositories/{Guid.NewGuid()}/pull-reviews", null);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAll_ReturnsMergeRequestsAcrossAllRepositories()
+    {
+        await SaveConfig(["group/project-a", "group/project-b"]);
+        var repos = await _client.GetFromJsonAsync<RepoSummary[]>("/api/repositories");
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff")]);
+        foreach (var repo in repos!)
+            await _client.PostAsync($"/api/repositories/{repo.Id}/pull-reviews", null);
+
+        var body = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
+
+        body.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task PollAll_FetchesMrsForEveryRepository()
+    {
+        await SaveConfig(["group/project-a", "group/project-b"]);
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff")]);
+
+        await _client.PostAsync("/api/repositories/poll-all", null);
+
+        var body = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
+        body.Should().HaveCount(2);
     }
 
     private async Task<Guid> SetupRepositoryAsync()
