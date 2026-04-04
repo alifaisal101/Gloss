@@ -1,9 +1,11 @@
+using Gloss.Application.MergeRequests;
 using Gloss.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Npgsql;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -17,6 +19,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         .Build();
 
     public string ConnectionString => _postgres.GetConnectionString();
+    public Mock<IGitClient> GitClient { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -27,6 +30,9 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
             {
                 ["ConnectionStrings:GlossDb"] = ConnectionString,
             }));
+
+        builder.ConfigureServices(services =>
+            services.AddSingleton(GitClient.Object));
     }
 
     public async Task InitializeAsync()
@@ -40,6 +46,8 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public async Task ResetAsync()
     {
+        GitClient.Reset();
+
         await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
