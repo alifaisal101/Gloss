@@ -81,7 +81,7 @@ public sealed class SaveConfigHandler(
         error = null;
         if (!string.IsNullOrWhiteSpace(incoming))
         {
-            if (incoming.Contains('*'))
+            if (incoming.Contains('*', StringComparison.Ordinal))
             {
                 error = ConfigErrors.MaskedSecretNotAccepted;
                 return null;

@@ -96,10 +96,7 @@ namespace Gloss.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasForeignKey("MergeRequestId")
-                        .HasConstraintName("FK_draft_comments_merge_requests_MergeRequestId")
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Cascade);
+                    b.HasIndex("MergeRequestId");
 
                     b.ToTable("draft_comments", (string)null);
                 });
@@ -147,11 +144,6 @@ namespace Gloss.Infrastructure.Migrations
                     b.HasIndex("RepositoryId", "ProviderIid")
                         .IsUnique();
 
-                    b.HasForeignKey("RepositoryId")
-                        .HasConstraintName("FK_merge_requests_repositories_RepositoryId")
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.ToTable("merge_requests", (string)null);
                 });
 
@@ -175,6 +167,26 @@ namespace Gloss.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("repositories", (string)null);
+                });
+
+            modelBuilder.Entity("Gloss.Domain.MergeRequests.DraftComment", b =>
+                {
+                    b.HasOne("Gloss.Domain.MergeRequests.MergeRequest", null)
+                        .WithMany()
+                        .HasForeignKey("MergeRequestId")
+                        .HasConstraintName("FK_draft_comments_merge_requests_MergeRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gloss.Domain.MergeRequests.MergeRequest", b =>
+                {
+                    b.HasOne("Gloss.Domain.Repositories.Repository", null)
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .HasConstraintName("FK_merge_requests_repositories_RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
