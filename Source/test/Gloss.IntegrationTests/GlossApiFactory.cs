@@ -1,3 +1,4 @@
+using Gloss.Application.Jobs;
 using Gloss.Application.MergeRequests;
 using Gloss.Application.Reviews;
 using Gloss.Infrastructure;
@@ -37,6 +38,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         {
             services.AddSingleton(GitClient.Object);
             services.AddSingleton(ReviewProvider.Object);
+            services.AddSingleton(Mock.Of<IJobScheduler>());
         });
     }
 

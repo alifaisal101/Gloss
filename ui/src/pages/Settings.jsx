@@ -42,7 +42,7 @@ export default function Settings() {
     setSaving(true);
     setError(null);
     try {
-      await api.updateConfig(form);
+      await api.updateConfig({ ...form, gitProjects: form.gitProjects.filter(Boolean) });
       const updated = normalize(await api.getConfig());
       setSettings(updated);
       setForm(updated);
@@ -101,7 +101,7 @@ export default function Settings() {
               <textarea
                 rows={4}
                 value={(form.gitProjects ?? []).join('\n')}
-                onChange={e => set('gitProjects', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
+                onChange={e => set('gitProjects', e.target.value.split('\n').map(s => s.trim()))}
                 placeholder={'group/project-one\ngroup/project-two'}
               />
             </Field>

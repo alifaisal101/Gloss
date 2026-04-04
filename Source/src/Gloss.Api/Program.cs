@@ -1,6 +1,7 @@
 using BuildingBlocks.Infrastructure.Api;
 using BuildingBlocks.Infrastructure.Api.Documentation;
 using BuildingBlocks.Infrastructure.Api.Health;
+using BuildingBlocks.Infrastructure.Api.Jobs;
 using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Secrets;
 using Gloss.Api.Configs;
@@ -24,6 +25,8 @@ builder.Services.AddMergeRequestApplication();
 builder.Services.AddReviewApplication();
 builder.Services.AddJobApplication();
 builder.Services.AddGlossInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<IJobScheduler, HangfireJobScheduler>();
+builder.Services.AddScoped<IRecurringJobRegistrar, PollJobRegistrar>();
 
 var app = builder.Build();
 

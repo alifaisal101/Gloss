@@ -2,6 +2,7 @@ using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Abstractions;
 using BuildingBlocks.Domain.Models.Secrets;
 using BuildingBlocks.Domain.Results;
+using Gloss.Application.Jobs;
 using Gloss.Domain.Configs;
 using Gloss.Domain.Repositories;
 
@@ -11,7 +12,8 @@ public sealed class SaveConfigHandler(
     IConfigRepository repository,
     IRepositoryRepository repositoryRepository,
     IDomainContext domainContext,
-    ISecretEncryptor encryptor)
+    ISecretEncryptor encryptor,
+    IJobScheduler jobScheduler)
 {
     public async Task<VoidResult> HandleAsync(SaveConfigCommand command, CancellationToken cancellationToken)
     {
@@ -70,6 +72,9 @@ public sealed class SaveConfigHandler(
         await SyncRepositoriesAsync(command.GitProjects, gitProviderResult.Value.Value, cancellationToken).ConfigureAwait(false);
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        jobScheduler.SchedulePollAll(command.DefaultPollCron);
+
         return Result.Success();
     }
 
