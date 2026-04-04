@@ -11,5 +11,6 @@ internal sealed class MergeRequestEntityConfiguration : IEntityTypeConfiguration
         builder.ToTable("merge_requests");
         builder.HasKey(x => x.Id);
         builder.HasIndex(x => new { x.RepositoryId, x.ProviderIid }).IsUnique();
+        builder.Property(x => x.State).HasConversion<int>();
     }
 }

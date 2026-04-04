@@ -11,6 +11,7 @@ public sealed class GlossDbContext(DbContextOptions<GlossDbContext> options) : M
     public DbSet<Config> Configs => Set<Config>();
     public DbSet<Repository> Repositories => Set<Repository>();
     public DbSet<MergeRequest> MergeRequests => Set<MergeRequest>();
+    public DbSet<DraftComment> DraftComments => Set<DraftComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

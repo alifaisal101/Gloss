@@ -1,4 +1,5 @@
 using BuildingBlocks.Infrastructure.Api.Responses;
+using Gloss.Application.MergeRequests.PollAllRepositories;
 using Gloss.Application.Repositories.ListRepositories;
 using Gloss.Application.Repositories.UpdatePollCron;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,14 @@ public static class RepositoryEndpoints
         {
             var result = await handler.HandleAsync(cancellationToken).ConfigureAwait(false);
             return Results.Ok(result);
+        });
+
+        group.MapPost("/poll-all", async (
+            [FromServices] PollAllRepositoriesHandler handler,
+            CancellationToken cancellationToken) =>
+        {
+            await handler.HandleAsync(cancellationToken).ConfigureAwait(false);
+            return Results.Ok();
         });
 
         group.MapPatch("/{id:guid}", async (

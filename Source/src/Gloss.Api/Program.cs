@@ -4,11 +4,14 @@ using BuildingBlocks.Infrastructure.Api.Health;
 using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Secrets;
 using Gloss.Api.Configs;
+using Gloss.Api.Jobs;
 using Gloss.Api.MergeRequests;
 using Gloss.Api.Repositories;
 using Gloss.Application.Configs;
+using Gloss.Application.Jobs;
 using Gloss.Application.MergeRequests;
 using Gloss.Application.Repositories;
+using Gloss.Application.Reviews;
 using Gloss.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +21,8 @@ builder.Services.AddSecretEncryption(builder.Configuration);
 builder.Services.AddConfigApplication();
 builder.Services.AddRepositoryApplication();
 builder.Services.AddMergeRequestApplication();
+builder.Services.AddReviewApplication();
+builder.Services.AddJobApplication();
 builder.Services.AddGlossInfrastructure(builder.Configuration);
 
 var app = builder.Build();
@@ -30,5 +35,6 @@ app.MapBuildingBlocksHealthChecks();
 app.MapConfigEndpoints();
 app.MapRepositoryEndpoints();
 app.MapMergeRequestEndpoints();
+app.MapJobEndpoints();
 
 await app.RunAsync().ConfigureAwait(false);

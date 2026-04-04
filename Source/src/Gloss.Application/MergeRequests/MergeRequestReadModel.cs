@@ -9,11 +9,12 @@ public sealed record MergeRequestReadModel(
     string Title,
     string SourceBranch,
     string TargetBranch,
-    string AuthorUsername)
+    string AuthorUsername,
+    string State)
 {
     public static MergeRequestReadModel From(MergeRequest mr)
     {
         ArgumentNullException.ThrowIfNull(mr);
-        return new(mr.Id, mr.RepositoryId, mr.ProviderIid, mr.Title, mr.SourceBranch, mr.TargetBranch, mr.AuthorUsername);
+        return new(mr.Id, mr.RepositoryId, mr.ProviderIid, mr.Title, mr.SourceBranch, mr.TargetBranch, mr.AuthorUsername, mr.State.ToString());
     }
 }

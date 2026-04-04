@@ -13,4 +13,9 @@ internal sealed class MergeRequestRepository(GlossDbContext db, IDomainContext d
             .Where(mr => mr.RepositoryId == repositoryId)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<MergeRequest>> ListAllAsync(CancellationToken cancellationToken) =>
+        await DbContext.Set<MergeRequest>()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }

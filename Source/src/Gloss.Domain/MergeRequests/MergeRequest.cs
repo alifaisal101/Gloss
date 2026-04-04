@@ -13,6 +13,8 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public string AuthorUsername { get; private set; } = null!;
     public string Diff { get; private set; } = null!;
 
+    public MergeRequestState State { get; private set; }
+
     private MergeRequest() : base(Guid.NewGuid()) { }
 
     public static MergeRequest Create(
@@ -28,9 +30,12 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         var mr = new MergeRequest();
         mr.RepositoryId = repositoryId;
         mr.ProviderIid = providerIid;
+        mr.State = MergeRequestState.Pending;
         mr.Apply(title, description, sourceBranch, targetBranch, authorUsername, diff);
         return mr;
     }
+
+    public void MarkReady() => State = MergeRequestState.Ready;
 
     public void Update(
         string title,
