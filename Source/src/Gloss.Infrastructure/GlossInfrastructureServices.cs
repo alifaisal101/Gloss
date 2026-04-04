@@ -21,7 +21,7 @@ public static class GlossInfrastructureServices
         services.AddBuildingBlocksEvents();
         services.AddHttpClient<IGitClient, GitLabClient>();
         services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>(client =>
-            client.BaseAddress = new Uri("https://api.anthropic.com/"));
+            client.BaseAddress = new Uri(configuration["Anthropic:BaseUrl"]!));
         return services;
     }
 }
