@@ -35,7 +35,7 @@ export default function MRDetail() {
   if (error && !mr) return <div className="error">Failed to load: {error.message}</div>;
 
   const comments = mr.comments ?? [];
-  const canReview = mr.state === 'Pending';
+  const canReview = mr.state === 'Pending' || mr.state === 'Ready';
 
   return (
     <div className="mr-detail">

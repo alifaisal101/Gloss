@@ -68,6 +68,25 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
     }
 
     [Fact]
+    public async Task Review_WhenReviewedAgain_ReplacesExistingComments()
+    {
+        var mrId = await SetupPendingMrAsync();
+        factory.ReviewProvider
+            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("src/Foo.cs", 10, "First review comment", null)]);
+        await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
+
+        factory.ReviewProvider
+            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new("src/Bar.cs", 5, "Second review comment", null)]);
+        await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
+
+        var mr = await _client.GetFromJsonAsync<MergeRequestDetailResponse>($"/api/merge-requests/{mrId}");
+        mr!.Comments.Should().HaveCount(1);
+        mr.Comments.Should().ContainSingle(c => c.FilePath == "src/Bar.cs" && c.Body == "Second review comment");
+    }
+
+    [Fact]
     public async Task GetById_ReturnsDiffAndFullShape()
     {
         var mrId = await SetupPendingMrAsync();

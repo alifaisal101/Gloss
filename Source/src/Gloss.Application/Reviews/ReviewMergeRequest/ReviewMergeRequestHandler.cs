@@ -7,6 +7,7 @@ namespace Gloss.Application.Reviews.ReviewMergeRequest;
 
 public sealed class ReviewMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
+    IDraftCommentRepository draftCommentRepository,
     IReviewProvider reviewProvider,
     IDomainContext domainContext)
 {
@@ -25,6 +26,10 @@ public sealed class ReviewMergeRequestHandler(
         {
             return MergeRequestErrors.LlmProviderUnauthorized;
         }
+
+        var existing = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        foreach (var c in existing)
+            domainContext.Remove<DraftComment, Guid>(c);
 
         foreach (var comment in comments)
             domainContext.Save<DraftComment, Guid>(
