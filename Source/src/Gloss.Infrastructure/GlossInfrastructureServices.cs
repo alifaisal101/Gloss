@@ -20,7 +20,8 @@ public static class GlossInfrastructureServices
         services.AddBuildingBlocksPersistence(typeof(GlossDbContext).Assembly);
         services.AddBuildingBlocksEvents();
         services.AddHttpClient<IGitClient, GitLabClient>();
-        services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>();
+        services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>(client =>
+            client.BaseAddress = new Uri("https://api.anthropic.com/"));
         return services;
     }
 }

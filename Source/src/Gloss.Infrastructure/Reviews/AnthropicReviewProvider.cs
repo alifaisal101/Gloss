@@ -27,7 +27,7 @@ internal sealed class AnthropicReviewProvider(
 
         var requestBody = BuildRequest(model, diff, config.LlmReasoningEnabled);
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("v1/messages", UriKind.Relative));
         request.Headers.Add("x-api-key", apiKey);
         request.Headers.Add("anthropic-version", ApiVersion);
         if (config.LlmReasoningEnabled)
@@ -40,7 +40,7 @@ internal sealed class AnthropicReviewProvider(
         var result = await response.Content.ReadFromJsonAsync<AnthropicResponse>(JsonOptions, cancellationToken).ConfigureAwait(false);
         if (result is null) return [];
 
-        var text = result.Content.FirstOrDefault(c => c.Type == "text")?.Text;
+        var text = result.Content.FirstOrDefault(c => string.Equals(c.Type, "text", StringComparison.Ordinal))?.Text;
         if (string.IsNullOrWhiteSpace(text)) return [];
 
         return ParseComments(text);
@@ -89,12 +89,12 @@ internal sealed class AnthropicReviewProvider(
         };
     }
 
-    private static IReadOnlyList<ReviewComment> ParseComments(string text)
+    private static List<ReviewComment> ParseComments(string text)
     {
         try
         {
             var trimmed = text.Trim();
-            var start = trimmed.IndexOf('[');
+            var start = trimmed.IndexOf('[', StringComparison.Ordinal);
             var end = trimmed.LastIndexOf(']');
             if (start < 0 || end < 0) return [];
 
