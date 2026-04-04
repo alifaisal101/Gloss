@@ -1,3 +1,4 @@
+using System.Net;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
 using Gloss.Domain.MergeRequests;
@@ -14,7 +15,15 @@ public sealed class ReviewMergeRequestHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
 
-        var comments = await reviewProvider.ReviewAsync(mr.Diff, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ReviewComment> comments;
+        try
+        {
+            comments = await reviewProvider.ReviewAsync(mr.Diff, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            return MergeRequestErrors.LlmProviderUnauthorized;
+        }
 
         foreach (var comment in comments)
             domainContext.Save<DraftComment, Guid>(

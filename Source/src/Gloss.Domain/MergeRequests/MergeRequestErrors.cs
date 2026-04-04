@@ -12,4 +12,7 @@ public static class MergeRequestErrors
 
     public static readonly DomainError GitProviderUnauthorized =
         new("MergeRequest.GitProvider.Unauthorized", "Git provider rejected the request. Check your access token in Settings.");
+
+    public static readonly DomainError LlmProviderUnauthorized =
+        new("MergeRequest.LlmProvider.Unauthorized", "LLM provider rejected the request. Check your API key in Settings.");
 }
