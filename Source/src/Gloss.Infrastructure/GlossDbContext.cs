@@ -1,5 +1,6 @@
 using BuildingBlocks.Infrastructure.EfCore;
 using Gloss.Domain.Configs;
+using Gloss.Domain.MergeRequests;
 using Gloss.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public sealed class GlossDbContext(DbContextOptions<GlossDbContext> options) : M
 {
     public DbSet<Config> Configs => Set<Config>();
     public DbSet<Repository> Repositories => Set<Repository>();
+    public DbSet<MergeRequest> MergeRequests => Set<MergeRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
