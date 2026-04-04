@@ -137,6 +137,21 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
     }
 
     [Fact]
+    public async Task RemovingProjectFromConfig_DeletesItssMergeRequests()
+    {
+        var repoId = await SetupRepositoryAsync();
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+        await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
+
+        await SaveConfig([]);
+
+        var mrs = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
+        mrs.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task PollAll_FetchesMrsForEveryRepository()
     {
         await SaveConfig(["group/project-a", "group/project-b"]);

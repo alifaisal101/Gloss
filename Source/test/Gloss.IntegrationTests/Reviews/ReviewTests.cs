@@ -84,6 +84,25 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
     }
 
     [Fact]
+    public async Task Review_WithLargeDiff_ReturnsError()
+    {
+        await SaveConfig(["group/project-a"]);
+        var repos = await _client.GetFromJsonAsync<RepoSummary[]>("/api/repositories");
+        var repoId = repos!.Single().Id;
+
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Big MR", null, "fix/big", "main", "alice", new string('+', 50_001))]);
+        await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
+        var mrs = await _client.GetFromJsonAsync<MrSummary[]>($"/api/repositories/{repoId}/merge-requests");
+        var mrId = mrs!.Single().Id;
+
+        var response = await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Review_WithUnknownMrId_ReturnsNotFound()
     {
         var response = await _client.PostAsync($"/api/merge-requests/{Guid.NewGuid()}/review", null);
