@@ -27,16 +27,13 @@ public sealed class SaveConfigHandler(
         var llmProviderResult = LlmProvider.Create(command.LlmProvider);
         if (llmProviderResult.IsFailure) return llmProviderResult.Error;
 
-        var gitTokenResult = Secret.Create(command.GitToken);
-        if (gitTokenResult.IsFailure) return gitTokenResult.Error;
-
-        var llmApiKeyResult = Secret.Create(command.LlmApiKey);
-        if (llmApiKeyResult.IsFailure) return llmApiKeyResult.Error;
-
-        var encryptedGitToken = encryptor.Encrypt(gitTokenResult.Value);
-        var encryptedLlmApiKey = encryptor.Encrypt(llmApiKeyResult.Value);
-
         var existing = await repository.FindAsync(cancellationToken).ConfigureAwait(false);
+
+        var encryptedGitToken = ResolveSecret(command.GitToken, existing?.GitToken, out var gitTokenError);
+        if (gitTokenError is not null) return gitTokenError;
+
+        var encryptedLlmApiKey = ResolveSecret(command.LlmApiKey, existing?.LlmApiKey, out var llmKeyError);
+        if (llmKeyError is not null) return llmKeyError;
 
         Config config;
         if (existing is null)
@@ -44,10 +41,10 @@ public sealed class SaveConfigHandler(
             config = Config.Create(
                 gitProviderResult.Value,
                 command.GitBaseUrl,
-                encryptedGitToken,
+                encryptedGitToken!,
                 command.GitProjects,
                 llmProviderResult.Value,
-                encryptedLlmApiKey,
+                encryptedLlmApiKey!,
                 command.LlmModel,
                 command.LlmReasoningEnabled,
                 command.DefaultPollCron);
@@ -57,10 +54,10 @@ public sealed class SaveConfigHandler(
             existing.Update(
                 gitProviderResult.Value,
                 command.GitBaseUrl,
-                encryptedGitToken,
+                encryptedGitToken!,
                 command.GitProjects,
                 llmProviderResult.Value,
-                encryptedLlmApiKey,
+                encryptedLlmApiKey!,
                 command.LlmModel,
                 command.LlmReasoningEnabled,
                 command.DefaultPollCron);
@@ -76,6 +73,20 @@ public sealed class SaveConfigHandler(
         jobScheduler.SchedulePollAll(command.DefaultPollCron);
 
         return Result.Success();
+    }
+
+    private EncryptedSecret? ResolveSecret(string? incoming, EncryptedSecret? existing, out DomainError? error)
+    {
+        error = null;
+        if (!string.IsNullOrWhiteSpace(incoming))
+        {
+            var result = Secret.Create(incoming.Trim());
+            if (result.IsFailure) { error = result.Error; return null; }
+            return encryptor.Encrypt(result.Value);
+        }
+        if (existing is not null) return existing;
+        error = ConfigErrors.SecretRequired;
+        return null;
     }
 
     private async Task SyncRepositoriesAsync(IReadOnlyList<string> projects, string provider, CancellationToken cancellationToken)

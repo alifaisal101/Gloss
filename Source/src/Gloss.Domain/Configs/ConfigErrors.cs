@@ -12,4 +12,7 @@ public static class ConfigErrors
 
     public static readonly DomainError InvalidGitBaseUrl =
         new("Config.Validation.InvalidGitBaseUrl", "Git base URL must be a valid absolute URL.");
+
+    public static readonly DomainError SecretRequired =
+        new("Config.Validation.SecretRequired", "Access token and API key are required on first save.");
 }

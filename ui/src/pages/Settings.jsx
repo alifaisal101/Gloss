@@ -8,10 +8,10 @@ function normalize(c) {
   return {
     gitProvider: c.gitProvider ?? 'gitlab',
     gitBaseUrl: c.gitBaseUrl ?? '',
-    gitToken: c.gitToken ?? '',
+    gitToken: c.gitToken ?? null,
     gitProjects: c.gitProjects ?? [],
     llmProvider: c.llmProvider ?? 'anthropic',
-    llmApiKey: c.llmApiKey ?? '',
+    llmApiKey: c.llmApiKey ?? null,
     llmModel: c.llmModel ?? '',
     llmReasoningEnabled: c.llmReasoningEnabled ?? true,
     defaultPollCron: c.defaultPollCron ?? '',
@@ -54,7 +54,10 @@ export default function Settings() {
     }
   }
 
-  const isDirty = form && settings && JSON.stringify(form) !== JSON.stringify(settings);
+  const secretsUnchanged = (form?.gitToken || null) === (settings?.gitToken || null) &&
+    (form?.llmApiKey || null) === (settings?.llmApiKey || null);
+  const nonSecretsDirty = form && settings && JSON.stringify({ ...form, gitToken: null, llmApiKey: null }) !== JSON.stringify({ ...settings, gitToken: null, llmApiKey: null });
+  const isDirty = !secretsUnchanged || nonSecretsDirty;
 
   if (loading) return <div className="loading">Loading…</div>;
   if (error && !form) return <div className="error">Failed to load: {error.message}</div>;
@@ -90,11 +93,14 @@ export default function Settings() {
                 placeholder="https://gitlab.example.com"
               />
             </Field>
-            <Field label="Personal Access Token">
+            <Field
+              label="Personal Access Token"
+              hint={form.gitProvider === 'gitlab' ? 'Required scope: api (read_api is enough to fetch MRs, but publishing comments requires api). Leave blank to keep the current token.' : 'Leave blank to keep the current token.'}
+            >
               <SecretInput
-                value={form.gitToken}
+                value={form.gitToken ?? ''}
                 onChange={v => set('gitToken', v)}
-                placeholder="glpat-…"
+                placeholder="leave blank to keep current"
               />
             </Field>
             <Field label="Projects to watch" hint="One project path per line (e.g. group/repo)">
@@ -116,11 +122,11 @@ export default function Settings() {
                 {LLM_PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </Field>
-            <Field label="API Key">
+            <Field label="API Key" hint="Leave blank to keep the current key">
               <SecretInput
-                value={form.llmApiKey}
+                value={form.llmApiKey ?? ''}
                 onChange={v => set('llmApiKey', v)}
-                placeholder="sk-ant-…"
+                placeholder="leave blank to keep current"
               />
             </Field>
             <Field label="Model" hint="e.g. claude-sonnet-4-6">

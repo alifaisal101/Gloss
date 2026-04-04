@@ -36,10 +36,10 @@ public sealed record ConfigReadModel(
             IsConfigured: true,
             GitProvider: config.GitProvider.Value,
             GitBaseUrl: config.GitBaseUrl,
-            GitToken: encryptor.Decrypt(config.GitToken).Mask(),
+            GitToken: null,
             GitProjects: config.GitProjects.ToList(),
             LlmProvider: config.LlmProvider.Value,
-            LlmApiKey: encryptor.Decrypt(config.LlmApiKey).Mask(),
+            LlmApiKey: null,
             LlmModel: config.LlmModel,
             LlmReasoningEnabled: config.LlmReasoningEnabled,
             DefaultPollCron: config.DefaultPollCron);
