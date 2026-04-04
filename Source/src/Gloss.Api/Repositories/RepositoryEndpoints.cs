@@ -22,10 +22,11 @@ public static class RepositoryEndpoints
 
         group.MapPost("/poll-all", async (
             [FromServices] PollAllRepositoriesHandler handler,
+            HttpContext ctx,
             CancellationToken cancellationToken) =>
         {
-            await handler.HandleAsync(cancellationToken).ConfigureAwait(false);
-            return Results.Ok();
+            var result = await handler.HandleAsync(cancellationToken).ConfigureAwait(false);
+            return result.ToOk(ctx);
         });
 
         group.MapPatch("/{id:guid}", async (
