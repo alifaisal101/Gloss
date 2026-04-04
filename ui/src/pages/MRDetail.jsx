@@ -11,6 +11,7 @@ export default function MRDetail() {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState(null);
   const [selectedCommit, setSelectedCommit] = useState(null);
+  const [commitsExpanded, setCommitsExpanded] = useState(true);
 
   useEffect(() => {
     api.getMr(id)
@@ -51,7 +52,8 @@ export default function MRDetail() {
   if (error && !mr) return <div className="error">Failed to load: {error.message}</div>;
 
   const comments = mr.comments ?? [];
-  const commits = mr.commits ?? [];
+  // GitLab returns commits newest-first; reverse so index 0 = oldest
+  const commits = [...(mr.commits ?? [])].reverse();
   const canReview = mr.state === 'Pending' || mr.state === 'Ready';
   const canPublish = mr.state === 'Ready';
 
@@ -61,21 +63,8 @@ export default function MRDetail() {
   return (
     <div className="mr-detail">
       <div className="mr-detail-header">
-        <div className="mr-detail-breadcrumb">
+        <div className="mr-detail-top">
           <Link to="/" className="back-link">← Merge Requests</Link>
-        </div>
-        <div className="mr-detail-title-row">
-          <div>
-            <h1>{mr.title}</h1>
-            <div className="mr-detail-meta">
-              <span className={`state-badge state-${mr.state.toLowerCase()}`}>{mr.state}</span>
-              <span className="muted">{mr.projectPath}</span>
-              <span className="branch mono">{mr.sourceBranch} → {mr.targetBranch}</span>
-              {!selectedCommit && comments.length > 0 && (
-                <span className="comment-count">{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
-              )}
-            </div>
-          </div>
           <div className="mr-actions">
             {canReview && (
               <button className="btn btn-secondary" onClick={handleReview} disabled={reviewing || publishing}>
@@ -92,42 +81,83 @@ export default function MRDetail() {
             )}
           </div>
         </div>
+
+        <div className="mr-detail-title-area">
+          <h1 className="mr-detail-title">{mr.title}</h1>
+          <span className={`state-badge state-${mr.state.toLowerCase()}`}>{mr.state}</span>
+        </div>
+
+        <div className="mr-detail-meta">
+          <span className="muted">{mr.projectPath}</span>
+          <span className="meta-sep">·</span>
+          <span className="mono">{mr.sourceBranch} → {mr.targetBranch}</span>
+          {!selectedCommit && comments.length > 0 && (
+            <>
+              <span className="meta-sep">·</span>
+              <span className="comment-count">{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
+            </>
+          )}
+        </div>
       </div>
 
-      {error && <div className="error" style={{ marginBottom: 16 }}>{error.message}</div>}
+      {error && <div className="error mr-error">{error.message}</div>}
 
       {commits.length > 0 && (
-        <div className="commit-selector">
-          <button
-            className={`commit-btn${!selectedCommit ? ' active' : ''}`}
-            onClick={() => setSelectedCommit(null)}
-          >
-            All changes
+        <div className="commits-panel">
+          <button className="commits-panel-head" onClick={() => setCommitsExpanded(e => !e)}>
+            <span className="commits-panel-title">Commits</span>
+            <span className="commits-panel-count muted">{commits.length}</span>
+            {commitsExpanded && <span className="commits-panel-hint muted">oldest → newest</span>}
+            <span className="commits-panel-chevron">{commitsExpanded ? '▲' : '▼'}</span>
           </button>
-          {commits.map(c => (
-            <button
-              key={c.sha}
-              className={`commit-btn${selectedCommit?.sha === c.sha ? ' active' : ''}`}
-              onClick={() => setSelectedCommit(c)}
-              title={c.title}
-            >
-              <span className="commit-sha">{c.sha.slice(0, 7)}</span>
-              <span className="commit-title-text">{c.title}</span>
-            </button>
-          ))}
+          {commitsExpanded && (
+            <div className="commits-list">
+              <button
+                className={`commits-all-btn${!selectedCommit ? ' active' : ''}`}
+                onClick={() => setSelectedCommit(null)}
+              >
+                <span className="commits-all-label">All changes</span>
+                {comments.length > 0 && (
+                  <span className={`commits-all-badge${!selectedCommit ? ' active' : ''}`}>
+                    {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </button>
+              <div className="commits-divider" />
+              {commits.map((c, i) => (
+                <button
+                  key={c.sha}
+                  className={`commit-row${selectedCommit?.sha === c.sha ? ' active' : ''}`}
+                  onClick={() => setSelectedCommit(c)}
+                >
+                  <span className="commit-row-num">{i + 1}</span>
+                  <span className="commit-row-sha mono">{c.sha.slice(0, 7)}</span>
+                  <span className="commit-row-msg">{c.title}</span>
+                  <span className="commit-row-author muted">{c.authorName}</span>
+                  {i === commits.length - 1 && (
+                    <span className="commit-row-latest">latest</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-
-      {!selectedCommit && activeComments.length === 0 && mr.state !== 'Pending' && (
-        <div className="empty" style={{ marginBottom: 16 }}>No comments generated.</div>
       )}
 
       {selectedCommit && (
-        <div className="commit-info">
-          <span className="commit-info-sha mono">{selectedCommit.sha.slice(0, 7)}</span>
-          <span className="commit-info-title">{selectedCommit.title}</span>
+        <div className="commit-context-bar">
+          <span className="commit-context-num">
+            Commit {commits.findIndex(c => c.sha === selectedCommit.sha) + 1} of {commits.length}
+          </span>
+          <span className="meta-sep">·</span>
+          <span className="mono commit-context-sha">{selectedCommit.sha.slice(0, 7)}</span>
+          <span className="commit-context-msg">{selectedCommit.title}</span>
           <span className="muted">by {selectedCommit.authorName}</span>
         </div>
+      )}
+
+      {!selectedCommit && comments.length === 0 && mr.state !== 'Pending' && (
+        <div className="empty" style={{ marginBottom: 16 }}>No comments generated.</div>
       )}
 
       <DiffView
