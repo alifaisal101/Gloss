@@ -2,7 +2,9 @@ using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Events;
 using BuildingBlocks.Infrastructure.Persistence;
 using Gloss.Application.MergeRequests;
+using Gloss.Application.Reviews;
 using Gloss.Infrastructure.MergeRequests;
+using Gloss.Infrastructure.Reviews;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +20,7 @@ public static class GlossInfrastructureServices
         services.AddBuildingBlocksPersistence(typeof(GlossDbContext).Assembly);
         services.AddBuildingBlocksEvents();
         services.AddHttpClient<IGitClient, GitLabClient>();
+        services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>();
         return services;
     }
 }
