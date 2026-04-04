@@ -77,7 +77,7 @@ public sealed class ConfigTests(GlossApiFactory factory) : IClassFixture<GlossAp
         await using var conn = new NpgsqlConnection(factory.ConnectionString);
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT git_token, llm_api_key FROM configs LIMIT 1";
+        cmd.CommandText = """SELECT "GitToken", "LlmApiKey" FROM configs LIMIT 1""";
         await using var reader = await cmd.ExecuteReaderAsync();
         await reader.ReadAsync();
 
