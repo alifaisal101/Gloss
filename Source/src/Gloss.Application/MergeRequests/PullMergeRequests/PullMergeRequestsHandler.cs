@@ -1,3 +1,4 @@
+using System.Net;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
 using Gloss.Domain.MergeRequests;
@@ -16,7 +17,16 @@ public sealed class PullMergeRequestsHandler(
         var repository = await repositoryRepository.GetByIdAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         if (repository is null) return MergeRequestErrors.RepositoryNotFound;
 
-        var remoteMrs = await gitClient.GetOpenMergeRequestsAsync(repository.ProjectPath, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<MergeRequestData> remoteMrs;
+        try
+        {
+            remoteMrs = await gitClient.GetOpenMergeRequestsAsync(repository.ProjectPath, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            return MergeRequestErrors.GitProviderUnauthorized;
+        }
+
         var existingMrs = await mergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         var existingByIid = existingMrs.ToDictionary(mr => mr.ProviderIid);
 
