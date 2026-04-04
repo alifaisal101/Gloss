@@ -111,7 +111,7 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
 
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Big MR", null, "fix/big", "main", "alice", new string('+', 50_001))]);
+            .ReturnsAsync([new(1, "Big MR", null, "fix/big", "main", "alice", new string('+', 50_001), "base", "head", "start")]);
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
         var mrs = await _client.GetFromJsonAsync<MrSummary[]>($"/api/repositories/{repoId}/merge-requests");
         var mrId = mrs!.Single().Id;
@@ -151,7 +151,7 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
 
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff --git a/src/Foo.cs")]);
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff --git a/src/Foo.cs", "base", "head", "start")]);
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         var mrs = await _client.GetFromJsonAsync<MrSummary[]>($"/api/repositories/{repoId}/merge-requests");

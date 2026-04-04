@@ -7,4 +7,7 @@ public sealed record MergeRequestData(
     string SourceBranch,
     string TargetBranch,
     string AuthorUsername,
-    string Diff);
+    string Diff,
+    string BaseSha,
+    string HeadSha,
+    string StartSha);

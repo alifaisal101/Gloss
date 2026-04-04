@@ -33,7 +33,7 @@ internal sealed class GitLabClient(
         foreach (var mr in mrs)
         {
             var diff = await GetDiffAsync(baseUrl, encoded, mr.Iid, token, cancellationToken).ConfigureAwait(false);
-            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author.Username, diff));
+            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author.Username, diff, mr.DiffRefs.BaseSha, mr.DiffRefs.HeadSha, mr.DiffRefs.StartSha));
         }
 
         return results;
@@ -71,15 +71,61 @@ internal sealed class GitLabClient(
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task PublishCommentAsync(
+        string projectPath,
+        int mrIid,
+        string baseSha,
+        string headSha,
+        string startSha,
+        string filePath,
+        int line,
+        string body,
+        CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return;
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var payload = new
+        {
+            body,
+            position = new
+            {
+                position_type = "text",
+                base_sha = baseSha,
+                head_sha = headSha,
+                start_sha = startSha,
+                new_path = filePath,
+                new_line = line,
+            }
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/discussions");
+        request.Headers.Add("PRIVATE-TOKEN", token);
+        request.Content = JsonContent.Create(payload);
+        var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+    }
+
     private sealed record GitLabMrDto(
         int Iid,
         string Title,
         string? Description,
         [property: JsonPropertyName("source_branch")] string SourceBranch,
         [property: JsonPropertyName("target_branch")] string TargetBranch,
-        GitLabAuthorDto Author);
+        GitLabAuthorDto Author,
+        [property: JsonPropertyName("diff_refs")] GitLabDiffRefsDto DiffRefs);
 
     private sealed record GitLabAuthorDto(string Username);
+
+    private sealed record GitLabDiffRefsDto(
+        [property: JsonPropertyName("base_sha")] string BaseSha,
+        [property: JsonPropertyName("head_sha")] string HeadSha,
+        [property: JsonPropertyName("start_sha")] string StartSha);
 
     private sealed record GitLabDiffDto(
         [property: JsonPropertyName("old_path")] string OldPath,

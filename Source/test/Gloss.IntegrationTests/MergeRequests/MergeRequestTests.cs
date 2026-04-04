@@ -57,8 +57,8 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
-                new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff --git ..."),
-                new(2, "Add caching", "Adds Redis cache", "feat/cache", "main", "bob", "diff --git ..."),
+                new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff --git ...", "base", "head", "start"),
+                new(2, "Add caching", "Adds Redis cache", "feat/cache", "main", "bob", "diff --git ...", "base", "head", "start"),
             ]);
 
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
@@ -75,7 +75,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var repoId = await SetupRepositoryAsync();
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff", "base", "head", "start")]);
 
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
@@ -90,7 +90,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var repoId = await SetupRepositoryAsync();
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
 
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
@@ -113,7 +113,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var repos = await _client.GetFromJsonAsync<RepoSummary[]>("/api/repositories");
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff", "base", "head", "start")]);
         foreach (var repo in repos!)
             await _client.PostAsync($"/api/repositories/{repo.Id}/pull-reviews", null);
 
@@ -128,7 +128,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var repoId = await SetupRepositoryAsync();
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         var mrs = await _client.GetFromJsonAsync<MergeRequestResponse[]>("/api/merge-requests");
@@ -142,7 +142,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         var repoId = await SetupRepositoryAsync();
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         await SaveConfig([]);
@@ -157,7 +157,7 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
         await SaveConfig(["group/project-a", "group/project-b"]);
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff")]);
+            .ReturnsAsync([new(1, "Fix null ref", null, "fix/null-ref", "main", "alice", "diff", "base", "head", "start")]);
 
         await _client.PostAsync("/api/repositories/poll-all", null);
 
