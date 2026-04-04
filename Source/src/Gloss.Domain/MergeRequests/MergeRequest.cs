@@ -29,9 +29,9 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string targetBranch,
         string authorUsername,
         string diff,
-        string baseSha,
-        string headSha,
-        string startSha)
+        string? baseSha,
+        string? headSha,
+        string? startSha)
     {
         var mr = new MergeRequest();
         mr.RepositoryId = repositoryId;
@@ -51,9 +51,9 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string targetBranch,
         string authorUsername,
         string diff,
-        string baseSha,
-        string headSha,
-        string startSha) =>
+        string? baseSha,
+        string? headSha,
+        string? startSha) =>
         Apply(title, description, sourceBranch, targetBranch, authorUsername, diff, baseSha, headSha, startSha);
 
     private void Apply(
@@ -63,9 +63,9 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string targetBranch,
         string authorUsername,
         string diff,
-        string baseSha,
-        string headSha,
-        string startSha)
+        string? baseSha,
+        string? headSha,
+        string? startSha)
     {
         Title = title;
         Description = description;

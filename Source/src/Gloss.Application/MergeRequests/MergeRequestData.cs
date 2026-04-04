@@ -8,6 +8,6 @@ public sealed record MergeRequestData(
     string TargetBranch,
     string AuthorUsername,
     string Diff,
-    string BaseSha,
-    string HeadSha,
-    string StartSha);
+    string? BaseSha,
+    string? HeadSha,
+    string? StartSha);

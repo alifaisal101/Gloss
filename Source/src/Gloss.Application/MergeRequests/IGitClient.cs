@@ -4,6 +4,8 @@ public interface IGitClient
 {
     Task<IReadOnlyList<MergeRequestData>> GetOpenMergeRequestsAsync(string projectPath, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<MrCommitData>> GetCommitsAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
     Task PublishCommentAsync(
         string projectPath,
         int mrIid,

@@ -33,7 +33,34 @@ internal sealed class GitLabClient(
         foreach (var mr in mrs)
         {
             var diff = await GetDiffAsync(baseUrl, encoded, mr.Iid, token, cancellationToken).ConfigureAwait(false);
-            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author.Username, diff, mr.DiffRefs.BaseSha, mr.DiffRefs.HeadSha, mr.DiffRefs.StartSha));
+            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author?.Username ?? string.Empty, diff, mr.DiffRefs?.BaseSha, mr.DiffRefs?.HeadSha, mr.DiffRefs?.StartSha));
+        }
+
+        return results;
+    }
+
+    public async Task<IReadOnlyList<MrCommitData>> GetCommitsAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return [];
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var commits = await SendAsync<GitLabCommitDto[]>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/commits",
+            token, cancellationToken).ConfigureAwait(false);
+
+        if (commits is null || commits.Length == 0) return [];
+
+        var results = new List<MrCommitData>(commits.Length);
+        foreach (var commit in commits)
+        {
+            var diffs = await SendAsync<GitLabDiffDto[]>(
+                $"{baseUrl}/api/v4/projects/{encoded}/repository/commits/{commit.Id}/diff",
+                token, cancellationToken).ConfigureAwait(false);
+            results.Add(new(commit.Id, commit.Title, commit.AuthorName, BuildDiff(diffs ?? [])));
         }
 
         return results;
@@ -44,9 +71,12 @@ internal sealed class GitLabClient(
         var diffs = await SendAsync<GitLabDiffDto[]>(
             $"{baseUrl}/api/v4/projects/{encodedPath}/merge_requests/{iid}/diffs",
             token, cancellationToken).ConfigureAwait(false);
+        return BuildDiff(diffs ?? []);
+    }
 
-        if (diffs is null || diffs.Length == 0) return string.Empty;
-
+    private static string BuildDiff(GitLabDiffDto[] diffs)
+    {
+        if (diffs.Length == 0) return string.Empty;
         var sb = new StringBuilder();
         foreach (var d in diffs)
         {
@@ -117,8 +147,8 @@ internal sealed class GitLabClient(
         string? Description,
         [property: JsonPropertyName("source_branch")] string SourceBranch,
         [property: JsonPropertyName("target_branch")] string TargetBranch,
-        GitLabAuthorDto Author,
-        [property: JsonPropertyName("diff_refs")] GitLabDiffRefsDto DiffRefs);
+        GitLabAuthorDto? Author,
+        [property: JsonPropertyName("diff_refs")] GitLabDiffRefsDto? DiffRefs);
 
     private sealed record GitLabAuthorDto(string Username);
 
@@ -126,6 +156,11 @@ internal sealed class GitLabClient(
         [property: JsonPropertyName("base_sha")] string BaseSha,
         [property: JsonPropertyName("head_sha")] string HeadSha,
         [property: JsonPropertyName("start_sha")] string StartSha);
+
+    private sealed record GitLabCommitDto(
+        string Id,
+        string Title,
+        [property: JsonPropertyName("author_name")] string AuthorName);
 
     private sealed record GitLabDiffDto(
         [property: JsonPropertyName("old_path")] string OldPath,

@@ -10,6 +10,7 @@ export default function MRDetail() {
   const [reviewing, setReviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedCommit, setSelectedCommit] = useState(null);
 
   useEffect(() => {
     api.getMr(id)
@@ -23,7 +24,9 @@ export default function MRDetail() {
     setError(null);
     try {
       await api.reviewMr(id);
-      setMr(await api.getMr(id));
+      const updated = await api.getMr(id);
+      setMr(updated);
+      setSelectedCommit(null);
     } catch (err) {
       setError(err);
     } finally {
@@ -48,8 +51,12 @@ export default function MRDetail() {
   if (error && !mr) return <div className="error">Failed to load: {error.message}</div>;
 
   const comments = mr.comments ?? [];
+  const commits = mr.commits ?? [];
   const canReview = mr.state === 'Pending' || mr.state === 'Ready';
   const canPublish = mr.state === 'Ready';
+
+  const activeDiff = selectedCommit ? selectedCommit.diff : mr.diff;
+  const activeComments = selectedCommit ? [] : comments;
 
   return (
     <div className="mr-detail">
@@ -64,7 +71,7 @@ export default function MRDetail() {
               <span className={`state-badge state-${mr.state.toLowerCase()}`}>{mr.state}</span>
               <span className="muted">{mr.projectPath}</span>
               <span className="branch mono">{mr.sourceBranch} → {mr.targetBranch}</span>
-              {comments.length > 0 && (
+              {!selectedCommit && comments.length > 0 && (
                 <span className="comment-count">{comments.length} comment{comments.length !== 1 ? 's' : ''}</span>
               )}
             </div>
@@ -89,13 +96,43 @@ export default function MRDetail() {
 
       {error && <div className="error" style={{ marginBottom: 16 }}>{error.message}</div>}
 
-      {comments.length === 0 && mr.state !== 'Pending' && (
+      {commits.length > 0 && (
+        <div className="commit-selector">
+          <button
+            className={`commit-btn${!selectedCommit ? ' active' : ''}`}
+            onClick={() => setSelectedCommit(null)}
+          >
+            All changes
+          </button>
+          {commits.map(c => (
+            <button
+              key={c.sha}
+              className={`commit-btn${selectedCommit?.sha === c.sha ? ' active' : ''}`}
+              onClick={() => setSelectedCommit(c)}
+              title={c.title}
+            >
+              <span className="commit-sha">{c.sha.slice(0, 7)}</span>
+              <span className="commit-title-text">{c.title}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!selectedCommit && activeComments.length === 0 && mr.state !== 'Pending' && (
         <div className="empty" style={{ marginBottom: 16 }}>No comments generated.</div>
       )}
 
+      {selectedCommit && (
+        <div className="commit-info">
+          <span className="commit-info-sha mono">{selectedCommit.sha.slice(0, 7)}</span>
+          <span className="commit-info-title">{selectedCommit.title}</span>
+          <span className="muted">by {selectedCommit.authorName}</span>
+        </div>
+      )}
+
       <DiffView
-        diff={mr.diff}
-        comments={comments}
+        diff={activeDiff}
+        comments={activeComments}
         onEditComment={() => {}}
         onDeleteComment={() => {}}
         onAddComment={() => {}}

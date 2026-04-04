@@ -55,6 +55,8 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         GitClient.Reset();
         ReviewProvider.Reset();
+        GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();

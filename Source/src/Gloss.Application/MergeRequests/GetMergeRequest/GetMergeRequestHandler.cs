@@ -6,7 +6,8 @@ namespace Gloss.Application.MergeRequests.GetMergeRequest;
 public sealed class GetMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
     IDraftCommentRepository draftCommentRepository,
-    IRepositoryRepository repositoryRepository)
+    IRepositoryRepository repositoryRepository,
+    IMrCommitRepository commitRepository)
 {
     public async Task<MergeRequestDetailReadModel?> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
     {
@@ -17,6 +18,7 @@ public sealed class GetMergeRequestHandler(
         if (repo is null) return null;
 
         var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
-        return MergeRequestDetailReadModel.From(mr, repo, comments);
+        var commits = await commitRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        return MergeRequestDetailReadModel.From(mr, repo, comments, commits);
     }
 }

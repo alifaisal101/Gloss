@@ -281,6 +281,70 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
 
 .comment-count { color: var(--accent); }
 
+/* ── Commit selector ── */
+
+.commit-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.commit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+
+.commit-btn:hover { color: var(--text); background: var(--surface-2); }
+
+.commit-btn.active {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.commit-sha {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.commit-title-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.commit-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.commit-info-sha { color: var(--accent); }
+.commit-info-title { font-weight: 500; }
+
 /* ── Diff ── */
 
 .diff-view { display: flex; flex-direction: column; gap: 12px; }

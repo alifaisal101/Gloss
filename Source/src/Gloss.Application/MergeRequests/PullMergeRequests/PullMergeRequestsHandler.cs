@@ -9,6 +9,7 @@ namespace Gloss.Application.MergeRequests.PullMergeRequests;
 public sealed class PullMergeRequestsHandler(
     IRepositoryRepository repositoryRepository,
     IMergeRequestRepository mergeRequestRepository,
+    IMrCommitRepository commitRepository,
     IGitClient gitClient,
     IDomainContext domainContext)
 {
@@ -32,13 +33,29 @@ public sealed class PullMergeRequestsHandler(
 
         foreach (var remote in remoteMrs)
         {
+            MergeRequest mr;
             if (existingByIid.TryGetValue(remote.Iid, out var existing))
+            {
                 existing.Update(remote.Title, remote.Description, remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff, remote.BaseSha, remote.HeadSha, remote.StartSha);
+                mr = existing;
+
+                var staleCommits = await commitRepository.ListByMergeRequestAsync(mr.Id, cancellationToken).ConfigureAwait(false);
+                foreach (var stale in staleCommits)
+                    domainContext.Remove<MrCommit, Guid>(stale);
+            }
             else
-                domainContext.Save<MergeRequest, Guid>(MergeRequest.Create(
-                    repositoryId, remote.Iid, remote.Title, remote.Description,
+            {
+                mr = MergeRequest.Create(repositoryId, remote.Iid, remote.Title, remote.Description,
                     remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff,
-                    remote.BaseSha, remote.HeadSha, remote.StartSha));
+                    remote.BaseSha, remote.HeadSha, remote.StartSha);
+                domainContext.Save<MergeRequest, Guid>(mr);
+            }
+
+            await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+            var remoteCommits = await gitClient.GetCommitsAsync(repository.ProjectPath, remote.Iid, cancellationToken).ConfigureAwait(false);
+            foreach (var commit in remoteCommits)
+                domainContext.Save<MrCommit, Guid>(MrCommit.Create(mr.Id, commit.Sha, commit.Title, commit.AuthorName, commit.Diff));
         }
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);

@@ -11,13 +11,19 @@ public sealed record MergeRequestDetailReadModel(
     string SourceBranch,
     string TargetBranch,
     string Diff,
-    IReadOnlyList<DraftCommentReadModel> Comments)
+    IReadOnlyList<DraftCommentReadModel> Comments,
+    IReadOnlyList<MrCommitReadModel> Commits)
 {
-    public static MergeRequestDetailReadModel From(MergeRequest mr, Repository repo, IReadOnlyList<DraftComment> comments)
+    public static MergeRequestDetailReadModel From(
+        MergeRequest mr,
+        Repository repo,
+        IReadOnlyList<DraftComment> comments,
+        IReadOnlyList<MrCommit> commits)
     {
         ArgumentNullException.ThrowIfNull(mr);
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(comments);
+        ArgumentNullException.ThrowIfNull(commits);
         return new(
             mr.Id,
             mr.Title,
@@ -26,6 +32,7 @@ public sealed record MergeRequestDetailReadModel(
             mr.SourceBranch,
             mr.TargetBranch,
             mr.Diff,
-            comments.Select(DraftCommentReadModel.From).ToList());
+            comments.Select(DraftCommentReadModel.From).ToList(),
+            commits.Select(MrCommitReadModel.From).ToList());
     }
 }
