@@ -13,17 +13,10 @@ async function request(method, path, body) {
 
 export const api = {
   // MRs
-  listMrs: () => request('GET', '/mrs'),
-  getMr: (id) => request('GET', `/mrs/${id}`),
-  publishMr: (id) => request('POST', `/mrs/${id}/publish`),
-
-  // Comments
-  editComment: (mrId, commentId, body, reason) =>
-    request('PATCH', `/mrs/${mrId}/comments/${commentId}`, { body, reason }),
-  deleteComment: (mrId, commentId, reason) =>
-    request('DELETE', `/mrs/${mrId}/comments/${commentId}`, { reason }),
-  addComment: (mrId, filePath, lineNumber, body, reason) =>
-    request('POST', `/mrs/${mrId}/comments`, { filePath, lineNumber, body, reason }),
+  listMrs: () => request('GET', '/merge-requests'),
+  getMr: (id) => request('GET', `/merge-requests/${id}`),
+  reviewMr: (id) => request('POST', `/merge-requests/${id}/review`),
+  pollAll: () => request('POST', '/repositories/poll-all'),
 
   // Repositories
   listRepositories: () => request('GET', '/repositories'),

@@ -12,7 +12,7 @@ export default function App() {
         <nav className="sidebar">
           <div className="sidebar-logo">Gloss</div>
           <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            Dashboard
+            Merge Requests
           </NavLink>
           <NavLink to="/repositories" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Repositories

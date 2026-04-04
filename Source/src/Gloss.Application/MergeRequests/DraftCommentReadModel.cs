@@ -2,7 +2,7 @@ using Gloss.Domain.MergeRequests;
 
 namespace Gloss.Application.MergeRequests;
 
-public sealed record DraftCommentReadModel(Guid Id, string FilePath, int Line, string Body, string? Reasoning)
+public sealed record DraftCommentReadModel(Guid Id, string FilePath, int LineNumber, string Body, string? Reasoning)
 {
     public static DraftCommentReadModel From(DraftComment dc)
     {
