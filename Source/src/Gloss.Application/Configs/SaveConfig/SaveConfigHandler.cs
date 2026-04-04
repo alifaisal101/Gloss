@@ -36,35 +36,7 @@ public sealed class SaveConfigHandler(
         var encryptedLlmApiKey = ResolveSecret(command.LlmApiKey, existing?.LlmApiKey, out var llmKeyError);
         if (llmKeyError is not null) return llmKeyError;
 
-        Config config;
-        if (existing is null)
-        {
-            config = Config.Create(
-                gitProviderResult.Value,
-                command.GitBaseUrl,
-                encryptedGitToken!,
-                command.GitProjects,
-                llmProviderResult.Value,
-                encryptedLlmApiKey!,
-                command.LlmModel,
-                command.LlmReasoningEnabled,
-                command.DefaultPollCron);
-        }
-        else
-        {
-            existing.Update(
-                gitProviderResult.Value,
-                command.GitBaseUrl,
-                encryptedGitToken!,
-                command.GitProjects,
-                llmProviderResult.Value,
-                encryptedLlmApiKey!,
-                command.LlmModel,
-                command.LlmReasoningEnabled,
-                command.DefaultPollCron);
-            config = existing;
-        }
-
+        var config = ApplyCommand(command, existing, gitProviderResult.Value, llmProviderResult.Value, encryptedGitToken!, encryptedLlmApiKey!);
         domainContext.Save<Config, Guid>(config);
 
         await SyncRepositoriesAsync(command.GitProjects, gitProviderResult.Value.Value, cancellationToken).ConfigureAwait(false);
@@ -74,6 +46,15 @@ public sealed class SaveConfigHandler(
         jobScheduler.SchedulePollAll(command.DefaultPollCron);
 
         return Result.Success();
+    }
+
+    private static Config ApplyCommand(SaveConfigCommand command, Config? existing, GitProvider gitProvider, LlmProvider llmProvider, EncryptedSecret gitToken, EncryptedSecret llmApiKey)
+    {
+        if (existing is null)
+            return Config.Create(gitProvider, command.GitBaseUrl, gitToken, command.GitProjects, llmProvider, llmApiKey, command.LlmModel, command.LlmReasoningEnabled, command.LlmMaxTokens, command.LlmThinkingBudget, command.DefaultPollCron);
+
+        existing.Update(gitProvider, command.GitBaseUrl, gitToken, command.GitProjects, llmProvider, llmApiKey, command.LlmModel, command.LlmReasoningEnabled, command.LlmMaxTokens, command.LlmThinkingBudget, command.DefaultPollCron);
+        return existing;
     }
 
     private EncryptedSecret? ResolveSecret(string? incoming, EncryptedSecret? existing, out DomainError? error)

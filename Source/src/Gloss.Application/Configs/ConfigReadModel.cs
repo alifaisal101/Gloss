@@ -13,6 +13,8 @@ public sealed record ConfigReadModel(
     bool LlmApiKeySet,
     string? LlmModel,
     bool? LlmReasoningEnabled,
+    int? LlmMaxTokens,
+    int? LlmThinkingBudget,
     string? DefaultPollCron)
 {
     public static readonly ConfigReadModel NotConfigured = new(
@@ -25,6 +27,8 @@ public sealed record ConfigReadModel(
         LlmApiKeySet: false,
         LlmModel: null,
         LlmReasoningEnabled: null,
+        LlmMaxTokens: null,
+        LlmThinkingBudget: null,
         DefaultPollCron: null);
 
     public static ConfigReadModel From(Config config, ISecretEncryptor encryptor)
@@ -42,6 +46,8 @@ public sealed record ConfigReadModel(
             LlmApiKeySet: true,
             LlmModel: config.LlmModel,
             LlmReasoningEnabled: config.LlmReasoningEnabled,
+            LlmMaxTokens: config.LlmMaxTokens,
+            LlmThinkingBudget: config.LlmThinkingBudget,
             DefaultPollCron: config.DefaultPollCron);
     }
 }

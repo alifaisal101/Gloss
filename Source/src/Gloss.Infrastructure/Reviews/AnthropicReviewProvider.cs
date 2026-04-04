@@ -4,18 +4,16 @@ using System.Text.Json.Serialization;
 using BuildingBlocks.Domain.Abstractions;
 using Gloss.Application.Reviews;
 using Gloss.Domain.Configs;
+using Microsoft.Extensions.Configuration;
 
 namespace Gloss.Infrastructure.Reviews;
 
 internal sealed class AnthropicReviewProvider(
     HttpClient httpClient,
     IConfigRepository configRepository,
-    ISecretEncryptor encryptor) : IReviewProvider
+    ISecretEncryptor encryptor,
+    IConfiguration configuration) : IReviewProvider
 {
-    private const string ApiVersion = "2023-06-01";
-    private const string DefaultModel = "claude-sonnet-4-6";
-    private const int MaxTokens = 16000;
-    private const int ThinkingBudget = 10000;
 
     public async Task<IReadOnlyList<ReviewComment>> ReviewAsync(string diff, CancellationToken cancellationToken)
     {
@@ -23,13 +21,18 @@ internal sealed class AnthropicReviewProvider(
         if (config is null) return [];
 
         var apiKey = encryptor.Decrypt(config.LlmApiKey).Value;
-        var model = string.IsNullOrWhiteSpace(config.LlmModel) ? DefaultModel : config.LlmModel;
+        var model = string.IsNullOrWhiteSpace(config.LlmModel)
+            ? configuration["Anthropic:DefaultModel"]!
+            : config.LlmModel;
+        var apiVersion = configuration["Anthropic:ApiVersion"]!;
+        var maxTokens = config.LlmMaxTokens;
+        var thinkingBudget = config.LlmThinkingBudget;
 
-        var requestBody = BuildRequest(model, diff, config.LlmReasoningEnabled);
+        var requestBody = BuildRequest(model, diff, config.LlmReasoningEnabled, maxTokens, thinkingBudget);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("v1/messages", UriKind.Relative));
         request.Headers.Add("x-api-key", apiKey);
-        request.Headers.Add("anthropic-version", ApiVersion);
+        request.Headers.Add("anthropic-version", apiVersion);
         if (config.LlmReasoningEnabled)
             request.Headers.Add("anthropic-beta", "interleaved-thinking-2025-05-14");
         request.Content = JsonContent.Create(requestBody, options: JsonOptions);
@@ -46,7 +49,7 @@ internal sealed class AnthropicReviewProvider(
         return ParseComments(text);
     }
 
-    private static object BuildRequest(string model, string diff, bool reasoningEnabled)
+    private static object BuildRequest(string model, string diff, bool reasoningEnabled, int maxTokens, int thinkingBudget)
     {
         var systemPrompt =
             """
@@ -67,8 +70,8 @@ internal sealed class AnthropicReviewProvider(
             return new
             {
                 model,
-                max_tokens = MaxTokens,
-                thinking = new { type = "enabled", budget_tokens = ThinkingBudget },
+                max_tokens = maxTokens,
+                thinking = new { type = "enabled", budget_tokens = thinkingBudget },
                 system = systemPrompt,
                 messages = new[]
                 {
@@ -80,13 +83,20 @@ internal sealed class AnthropicReviewProvider(
         return new
         {
             model,
-            max_tokens = MaxTokens,
+            max_tokens = maxTokens,
             system = systemPrompt,
             messages = new[]
             {
                 new { role = "user", content = $"Review this diff:\n\n{diff}" }
             }
         };
+    }
+
+    private static string NormalizeFilePath(string path)
+    {
+        if (path.StartsWith("b/", StringComparison.Ordinal)) return path[2..];
+        if (path.StartsWith("a/", StringComparison.Ordinal)) return path[2..];
+        return path;
     }
 
     private static List<ReviewComment> ParseComments(string text)
@@ -104,7 +114,7 @@ internal sealed class AnthropicReviewProvider(
 
             return items
                 .Where(c => !string.IsNullOrWhiteSpace(c.FilePath) && !string.IsNullOrWhiteSpace(c.Body))
-                .Select(c => new ReviewComment(c.FilePath!, c.Line, c.Body!, c.Reasoning))
+                .Select(c => new ReviewComment(NormalizeFilePath(c.FilePath!), c.Line, c.Body!, c.Reasoning))
                 .ToList();
         }
         catch (JsonException)

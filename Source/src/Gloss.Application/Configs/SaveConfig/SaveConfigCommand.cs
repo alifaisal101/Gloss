@@ -9,4 +9,6 @@ public sealed record SaveConfigCommand(
     string? LlmApiKey,
     string LlmModel,
     bool LlmReasoningEnabled,
+    int LlmMaxTokens,
+    int LlmThinkingBudget,
     string DefaultPollCron);

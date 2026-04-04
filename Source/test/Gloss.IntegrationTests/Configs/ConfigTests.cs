@@ -15,6 +15,8 @@ public record ConfigRequest(
     string? LlmApiKey,
     string LlmModel,
     bool LlmReasoningEnabled,
+    int LlmMaxTokens,
+    int LlmThinkingBudget,
     string DefaultPollCron
 );
 
@@ -28,6 +30,8 @@ public record ConfigResponse(
     bool LlmApiKeySet,
     string? LlmModel,
     bool? LlmReasoningEnabled,
+    int? LlmMaxTokens,
+    int? LlmThinkingBudget,
     string? DefaultPollCron
 );
 
@@ -119,6 +123,8 @@ public sealed class ConfigTests(GlossApiFactory factory) : IClassFixture<GlossAp
         LlmApiKey: "sk-ant-secret-key",
         LlmModel: "claude-sonnet-4-6",
         LlmReasoningEnabled: true,
+        LlmMaxTokens: 16000,
+        LlmThinkingBudget: 10000,
         DefaultPollCron: "0 */2 * * * ?"
     );
 }

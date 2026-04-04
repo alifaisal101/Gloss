@@ -16,6 +16,8 @@ function normalize(c) {
     llmApiKeySet: c.llmApiKeySet ?? false,
     llmModel: c.llmModel ?? '',
     llmReasoningEnabled: c.llmReasoningEnabled ?? true,
+    llmMaxTokens: c.llmMaxTokens ?? 16000,
+    llmThinkingBudget: c.llmThinkingBudget ?? 10000,
     defaultPollCron: c.defaultPollCron ?? '',
   };
 }
@@ -158,6 +160,22 @@ export default function Settings() {
                 />
                 <span>Include reasoning trace in draft comments</span>
               </label>
+            </Field>
+            <Field label="Max tokens" hint="Maximum tokens in the LLM response (e.g. 16000)">
+              <input
+                type="number"
+                min={1}
+                value={form.llmMaxTokens}
+                onChange={e => set('llmMaxTokens', Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Thinking budget" hint="Token budget for extended thinking (e.g. 10000); ignored when reasoning is disabled">
+              <input
+                type="number"
+                min={1}
+                value={form.llmThinkingBudget}
+                onChange={e => set('llmThinkingBudget', Number(e.target.value))}
+              />
             </Field>
           </div>
         </section>

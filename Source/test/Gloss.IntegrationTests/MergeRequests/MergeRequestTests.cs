@@ -185,6 +185,8 @@ public sealed class MergeRequestTests(GlossApiFactory factory) : IClassFixture<G
             LlmApiKey = "sk-ant-key",
             LlmModel = "claude-sonnet-4-6",
             LlmReasoningEnabled = true,
+            LlmMaxTokens = 16000,
+            LlmThinkingBudget = 10000,
             DefaultPollCron = "0 */2 * * * ?"
         });
 }
