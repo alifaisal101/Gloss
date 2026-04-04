@@ -108,7 +108,9 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
 .page-desc em { color: var(--text); font-style: italic; }
 .page-desc code { background: var(--surface-2); padding: 1px 4px; border-radius: 3px; }
 
-.page-actions { display: flex; gap: 8px; }
+.page-actions { display: flex; gap: 8px; align-items: center; }
+
+.page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
 .loading, .empty, .error {
   padding: 40px;
@@ -158,11 +160,17 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
 .btn-ghost.btn-danger { color: var(--red); border-color: var(--red); }
 .btn-ghost.btn-danger:hover:not(:disabled) { background: #3d0c12; }
 
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--accent); opacity: 1; }
+
 .btn-publish {
   background: var(--green);
   color: #0d1117;
-  font-size: 14px;
-  padding: 8px 20px;
 }
 
 .btn-sm { padding: 4px 10px; font-size: 12px; }
@@ -225,11 +233,11 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
   letter-spacing: 0.3px;
 }
 
-.state-pending  { background: #2d3c4a; color: #79c0ff; }
-.state-ready    { background: #0d4429; color: #3fb950; }
-.state-seen     { background: #2d2a20; color: #d29922; }
-.state-staged   { background: #2d1b3d; color: #bc8cff; }
-.state-published{ background: #21262d; color: #8b949e; }
+.state-pending   { background: #2d3c4a; color: #79c0ff; }
+.state-ready     { background: #0d4429; color: #3fb950; }
+.state-seen      { background: #2d2a20; color: #d29922; }
+.state-staged    { background: #2d1b3d; color: #bc8cff; }
+.state-published { background: #1a2a1a; color: #56d364; }
 
 /* ── MR Detail ── */
 
@@ -260,6 +268,16 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
 .mr-detail-title-row h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
 
 .mr-detail-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+
+.mr-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+.published-indicator {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 
 .comment-count { color: var(--accent); }
 

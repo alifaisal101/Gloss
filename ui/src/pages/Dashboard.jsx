@@ -2,13 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 
-const STATE_ORDER = ['Pending', 'Ready', 'Seen', 'Staged', 'Published'];
+const STATE_ORDER = ['Pending', 'Ready', 'Published'];
 const STATE_LABEL = {
   Pending: 'Awaiting review',
-  Ready: 'Reviewed — not yet opened',
-  Seen: 'Opened, no changes made',
-  Staged: 'Edited or commented',
-  Published: 'Posted to Git platform',
+  Ready: 'Reviewed — ready to publish',
+  Published: 'Published to Git platform',
 };
 
 export default function Dashboard() {
@@ -17,11 +15,9 @@ export default function Dashboard() {
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState(null);
 
-  const load = useCallback(() => {
-    return api.listMrs()
-      .then(setMrs)
-      .catch(setError);
-  }, []);
+  const load = useCallback(() =>
+    api.listMrs().then(setMrs).catch(setError)
+  , []);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
@@ -47,14 +43,18 @@ export default function Dashboard() {
     return acc;
   }, {});
 
-  const total = mrs.length;
+  const actionable = (grouped['Pending']?.length ?? 0) + (grouped['Ready']?.length ?? 0);
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Merge Requests</h1>
+        <div>
+          <h1>Merge Requests</h1>
+          {actionable > 0 && (
+            <div className="page-subtitle">{actionable} need attention</div>
+          )}
+        </div>
         <div className="page-actions">
-          {total > 0 && <span className="muted">{total} total</span>}
           <button className="btn" onClick={handlePollNow} disabled={polling}>
             {polling ? 'Polling…' : 'Poll now'}
           </button>
@@ -73,28 +73,34 @@ export default function Dashboard() {
             </div>
             <div className="mr-list">
               {grouped[state].map(mr => (
-                <Link key={mr.id} to={`/mr/${mr.id}`} className="mr-card">
-                  <div className="mr-card-title">{mr.title}</div>
-                  <div className="mr-card-meta">
-                    <span>{mr.projectPath}</span>
-                    <span className="branch">{mr.sourceBranch} → {mr.targetBranch}</span>
-                  </div>
-                </Link>
+                <MrCard key={mr.id} mr={mr} />
               ))}
             </div>
           </section>
         ) : null
       )}
 
-      {total === 0 && (
+      {mrs.length === 0 && (
         <div className="empty">
           No merge requests yet.{' '}
-          <button className="btn-ghost" onClick={handlePollNow} disabled={polling}>
+          <button className="btn-ghost btn-sm" onClick={handlePollNow} disabled={polling}>
             {polling ? 'Polling…' : 'Poll now'}
-          </button>{' '}
-          to fetch from configured projects.
+          </button>
         </div>
       )}
     </div>
+  );
+}
+
+function MrCard({ mr }) {
+  return (
+    <Link to={`/mr/${mr.id}`} className="mr-card">
+      <div className="mr-card-title">{mr.title}</div>
+      <div className="mr-card-meta">
+        <span className="muted">{mr.projectPath}</span>
+        <span className="branch mono">{mr.sourceBranch} → {mr.targetBranch}</span>
+        <span className="muted">{mr.authorUsername}</span>
+      </div>
+    </Link>
   );
 }

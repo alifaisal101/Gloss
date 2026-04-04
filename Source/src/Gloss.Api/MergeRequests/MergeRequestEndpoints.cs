@@ -3,6 +3,7 @@ using Gloss.Application.MergeRequests.GetMergeRequest;
 using Gloss.Application.MergeRequests.ListAllMergeRequests;
 using Gloss.Application.MergeRequests.ListMergeRequests;
 using Gloss.Application.MergeRequests.PullMergeRequests;
+using Gloss.Application.Reviews.PublishMergeRequest;
 using Gloss.Application.Reviews.ReviewMergeRequest;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +33,16 @@ public static class MergeRequestEndpoints
         app.MapPost("/api/merge-requests/{mrId:guid}/review", async (
             Guid mrId,
             [FromServices] ReviewMergeRequestHandler handler,
+            HttpContext ctx,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(mrId, cancellationToken).ConfigureAwait(false);
+            return result.ToOk(ctx);
+        }).WithTags("MergeRequests");
+
+        app.MapPost("/api/merge-requests/{mrId:guid}/publish", async (
+            Guid mrId,
+            [FromServices] PublishMergeRequestHandler handler,
             HttpContext ctx,
             CancellationToken cancellationToken) =>
         {

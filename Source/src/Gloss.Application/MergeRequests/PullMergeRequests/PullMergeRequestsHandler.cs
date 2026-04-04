@@ -33,11 +33,12 @@ public sealed class PullMergeRequestsHandler(
         foreach (var remote in remoteMrs)
         {
             if (existingByIid.TryGetValue(remote.Iid, out var existing))
-                existing.Update(remote.Title, remote.Description, remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff);
+                existing.Update(remote.Title, remote.Description, remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff, remote.BaseSha, remote.HeadSha, remote.StartSha);
             else
                 domainContext.Save<MergeRequest, Guid>(MergeRequest.Create(
                     repositoryId, remote.Iid, remote.Title, remote.Description,
-                    remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff));
+                    remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff,
+                    remote.BaseSha, remote.HeadSha, remote.StartSha));
         }
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);

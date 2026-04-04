@@ -18,4 +18,10 @@ public static class MergeRequestErrors
 
     public static readonly DomainError DiffTooLarge =
         new("MergeRequest.DiffTooLarge", "Diff is too large to review automatically. Break the MR into smaller changes.");
+
+    public static readonly DomainError NotReady =
+        new("MergeRequest.NotReady", "Merge request must be in Ready state before publishing.");
+
+    public static readonly DomainError MissingShas =
+        new("MergeRequest.MissingShas", "Diff reference SHAs are missing. Re-pull the merge request to refresh them.");
 }

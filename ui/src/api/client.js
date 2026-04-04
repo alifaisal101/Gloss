@@ -16,6 +16,7 @@ export const api = {
   listMrs: () => request('GET', '/merge-requests'),
   getMr: (id) => request('GET', `/merge-requests/${id}`),
   reviewMr: (id) => request('POST', `/merge-requests/${id}/review`),
+  publishMr: (id) => request('POST', `/merge-requests/${id}/publish`),
   pollAll: () => request('POST', '/repositories/poll-all'),
 
   // Repositories

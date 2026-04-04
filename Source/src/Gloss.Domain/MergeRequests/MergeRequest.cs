@@ -12,6 +12,9 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public string TargetBranch { get; private set; } = null!;
     public string AuthorUsername { get; private set; } = null!;
     public string Diff { get; private set; } = null!;
+    public string? BaseSha { get; private set; }
+    public string? HeadSha { get; private set; }
+    public string? StartSha { get; private set; }
 
     public MergeRequestState State { get; private set; }
 
@@ -25,17 +28,21 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string sourceBranch,
         string targetBranch,
         string authorUsername,
-        string diff)
+        string diff,
+        string baseSha,
+        string headSha,
+        string startSha)
     {
         var mr = new MergeRequest();
         mr.RepositoryId = repositoryId;
         mr.ProviderIid = providerIid;
         mr.State = MergeRequestState.Pending;
-        mr.Apply(title, description, sourceBranch, targetBranch, authorUsername, diff);
+        mr.Apply(title, description, sourceBranch, targetBranch, authorUsername, diff, baseSha, headSha, startSha);
         return mr;
     }
 
     public void MarkReady() => State = MergeRequestState.Ready;
+    public void MarkPublished() => State = MergeRequestState.Published;
 
     public void Update(
         string title,
@@ -43,8 +50,11 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string sourceBranch,
         string targetBranch,
         string authorUsername,
-        string diff) =>
-        Apply(title, description, sourceBranch, targetBranch, authorUsername, diff);
+        string diff,
+        string baseSha,
+        string headSha,
+        string startSha) =>
+        Apply(title, description, sourceBranch, targetBranch, authorUsername, diff, baseSha, headSha, startSha);
 
     private void Apply(
         string title,
@@ -52,7 +62,10 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         string sourceBranch,
         string targetBranch,
         string authorUsername,
-        string diff)
+        string diff,
+        string baseSha,
+        string headSha,
+        string startSha)
     {
         Title = title;
         Description = description;
@@ -60,5 +73,8 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         TargetBranch = targetBranch;
         AuthorUsername = authorUsername;
         Diff = diff;
+        BaseSha = baseSha;
+        HeadSha = headSha;
+        StartSha = startSha;
     }
 }
