@@ -19,19 +19,19 @@ public sealed class PublishMergeRequestHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
         if (mr.State != MergeRequestState.Ready) return MergeRequestErrors.NotReady;
-        if (mr.BaseSha is null || mr.HeadSha is null || mr.StartSha is null) return MergeRequestErrors.MissingShas;
 
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repo is null) return MergeRequestErrors.RepositoryNotFound;
 
         var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        var shas = await gitClient.GetMrShasAsync(repo.ProjectPath, mr.ProviderIid, cancellationToken).ConfigureAwait(false);
 
         try
         {
             foreach (var comment in comments)
                 await gitClient.PublishCommentAsync(
                     repo.ProjectPath, mr.ProviderIid,
-                    mr.BaseSha, mr.HeadSha, mr.StartSha,
+                    shas?.BaseSha, shas?.HeadSha, shas?.StartSha,
                     comment.FilePath, comment.Line, comment.Body,
                     cancellationToken).ConfigureAwait(false);
         }

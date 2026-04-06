@@ -6,12 +6,14 @@ public interface IGitClient
 
     Task<IReadOnlyList<MrCommitData>> GetCommitsAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
 
+    Task<MrShasData?> GetMrShasAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
     Task PublishCommentAsync(
         string projectPath,
         int mrIid,
-        string baseSha,
-        string headSha,
-        string startSha,
+        string? baseSha,
+        string? headSha,
+        string? startSha,
         string filePath,
         int line,
         string body,

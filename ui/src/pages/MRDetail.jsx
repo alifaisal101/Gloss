@@ -72,7 +72,8 @@ export default function MRDetail() {
               </button>
             )}
             {canPublish && (
-              <button className="btn btn-publish" onClick={handlePublish} disabled={publishing || reviewing}>
+              <button className="btn btn-publish" onClick={handlePublish} disabled={publishing || reviewing}
+                title={!mr.hasShas ? 'Diff refs unavailable — comments will be posted as general notes' : undefined}>
                 {publishing ? 'Publishing…' : 'Publish to GitLab'}
               </button>
             )}

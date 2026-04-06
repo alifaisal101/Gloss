@@ -11,6 +11,7 @@ public sealed record MergeRequestDetailReadModel(
     string SourceBranch,
     string TargetBranch,
     string Diff,
+    bool HasShas,
     IReadOnlyList<DraftCommentReadModel> Comments,
     IReadOnlyList<MrCommitReadModel> Commits)
 {
@@ -32,6 +33,7 @@ public sealed record MergeRequestDetailReadModel(
             mr.SourceBranch,
             mr.TargetBranch,
             mr.Diff,
+            mr.BaseSha is not null && mr.HeadSha is not null && mr.StartSha is not null,
             comments.Select(DraftCommentReadModel.From).ToList(),
             commits.Select(MrCommitReadModel.From).ToList());
     }

@@ -33,10 +33,50 @@ internal sealed class GitLabClient(
         foreach (var mr in mrs)
         {
             var diff = await GetDiffAsync(baseUrl, encoded, mr.Iid, token, cancellationToken).ConfigureAwait(false);
-            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author?.Username ?? string.Empty, diff, mr.DiffRefs?.BaseSha, mr.DiffRefs?.HeadSha, mr.DiffRefs?.StartSha));
+            var (baseSha, headSha, startSha) = mr.DiffRefs is not null
+                ? (mr.DiffRefs.BaseSha, mr.DiffRefs.HeadSha, mr.DiffRefs.StartSha)
+                : await GetVersionShasAsync(baseUrl, encoded, mr.Iid, token, cancellationToken).ConfigureAwait(false);
+            results.Add(new(mr.Iid, mr.Title, mr.Description, mr.SourceBranch, mr.TargetBranch, mr.Author?.Username ?? string.Empty, diff, baseSha, headSha, startSha));
         }
 
         return results;
+    }
+
+    public async Task<MrShasData?> GetMrShasAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return null;
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var mr = await SendAsync<GitLabMrDto>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}",
+            token, cancellationToken).ConfigureAwait(false);
+
+        if (mr?.DiffRefs?.BaseSha is not null && mr.DiffRefs.HeadSha is not null && mr.DiffRefs.StartSha is not null)
+            return new(mr.DiffRefs.BaseSha, mr.DiffRefs.HeadSha, mr.DiffRefs.StartSha);
+
+        var versions = await SendAsync<GitLabMrVersionDto[]>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/versions",
+            token, cancellationToken).ConfigureAwait(false);
+
+        var latest = versions?.FirstOrDefault();
+        if (latest?.BaseCommitSha is not null && latest.HeadCommitSha is not null && latest.StartCommitSha is not null)
+            return new(latest.BaseCommitSha, latest.HeadCommitSha, latest.StartCommitSha);
+
+        return null;
+    }
+
+    private async Task<(string? BaseSha, string? HeadSha, string? StartSha)> GetVersionShasAsync(
+        string baseUrl, string encodedPath, int iid, string token, CancellationToken cancellationToken)
+    {
+        var versions = await SendAsync<GitLabMrVersionDto[]>(
+            $"{baseUrl}/api/v4/projects/{encodedPath}/merge_requests/{iid}/versions",
+            token, cancellationToken).ConfigureAwait(false);
+        var latest = versions?.FirstOrDefault();
+        return (latest?.BaseCommitSha, latest?.HeadCommitSha, latest?.StartCommitSha);
     }
 
     public async Task<IReadOnlyList<MrCommitData>> GetCommitsAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
@@ -104,9 +144,9 @@ internal sealed class GitLabClient(
     public async Task PublishCommentAsync(
         string projectPath,
         int mrIid,
-        string baseSha,
-        string headSha,
-        string startSha,
+        string? baseSha,
+        string? headSha,
+        string? startSha,
         string filePath,
         int line,
         string body,
@@ -119,19 +159,21 @@ internal sealed class GitLabClient(
         var encoded = Uri.EscapeDataString(projectPath);
         var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
 
-        var payload = new
-        {
-            body,
-            position = new
+        object payload = baseSha is not null && headSha is not null && startSha is not null
+            ? new
             {
-                position_type = "text",
-                base_sha = baseSha,
-                head_sha = headSha,
-                start_sha = startSha,
-                new_path = filePath,
-                new_line = line,
+                body,
+                position = new
+                {
+                    position_type = "text",
+                    base_sha = baseSha,
+                    head_sha = headSha,
+                    start_sha = startSha,
+                    new_path = filePath,
+                    new_line = line,
+                }
             }
-        };
+            : new { body };
 
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/discussions");
@@ -156,6 +198,11 @@ internal sealed class GitLabClient(
         [property: JsonPropertyName("base_sha")] string BaseSha,
         [property: JsonPropertyName("head_sha")] string HeadSha,
         [property: JsonPropertyName("start_sha")] string StartSha);
+
+    private sealed record GitLabMrVersionDto(
+        [property: JsonPropertyName("base_commit_sha")] string? BaseCommitSha,
+        [property: JsonPropertyName("head_commit_sha")] string? HeadCommitSha,
+        [property: JsonPropertyName("start_commit_sha")] string? StartCommitSha);
 
     private sealed record GitLabCommitDto(
         string Id,

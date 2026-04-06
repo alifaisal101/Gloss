@@ -57,6 +57,8 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         ReviewProvider.Reset();
         GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
+        GitClient.Setup(x => x.GetMrShasAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Gloss.Application.MergeRequests.MrShasData("base-sha", "head-sha", "start-sha"));
 
         await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
