@@ -6,11 +6,12 @@ public sealed record RepositoryReadModel(
     Guid Id,
     string ProjectPath,
     string Provider,
-    string? PollCron)
+    string? PollCron,
+    bool AutoReviewEnabled)
 {
     public static RepositoryReadModel From(Repository repository)
     {
         ArgumentNullException.ThrowIfNull(repository);
-        return new(repository.Id, repository.ProjectPath, repository.Provider, repository.PollCron);
+        return new(repository.Id, repository.ProjectPath, repository.Provider, repository.PollCron, repository.AutoReviewEnabled);
     }
 }

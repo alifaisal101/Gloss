@@ -1,6 +1,7 @@
 using System.Net;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
+using Gloss.Application.Jobs;
 using Gloss.Domain.MergeRequests;
 using Gloss.Domain.Repositories;
 
@@ -11,6 +12,7 @@ public sealed class PullMergeRequestsHandler(
     IMergeRequestRepository mergeRequestRepository,
     IMrCommitRepository commitRepository,
     IGitClient gitClient,
+    IJobScheduler jobScheduler,
     IDomainContext domainContext)
 {
     public async Task<VoidResult> HandleAsync(Guid repositoryId, CancellationToken cancellationToken)
@@ -30,6 +32,7 @@ public sealed class PullMergeRequestsHandler(
 
         var existingMrs = await mergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         var existingByIid = existingMrs.ToDictionary(mr => mr.ProviderIid);
+        var newMrIds = new List<Guid>();
 
         foreach (var remote in remoteMrs)
         {
@@ -49,6 +52,7 @@ public sealed class PullMergeRequestsHandler(
                     remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff,
                     remote.BaseSha, remote.HeadSha, remote.StartSha);
                 domainContext.Save<MergeRequest, Guid>(mr);
+                newMrIds.Add(mr.Id);
             }
 
             await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -59,6 +63,11 @@ public sealed class PullMergeRequestsHandler(
         }
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        if (repository.AutoReviewEnabled)
+            foreach (var mrId in newMrIds)
+                jobScheduler.EnqueueReview(mrId);
+
         return Result.Success();
     }
 }

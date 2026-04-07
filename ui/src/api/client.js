@@ -21,8 +21,8 @@ export const api = {
 
   // Repositories
   listRepositories: () => request('GET', '/repositories'),
-  updateRepository: (id, pollCron) =>
-    request('PATCH', `/repositories/${id}`, { pollCron }),
+  updateRepository: (id, fields) =>
+    request('PATCH', `/repositories/${id}`, fields),
 
   // Config
   getConfig: () => request('GET', '/config'),

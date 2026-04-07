@@ -1,7 +1,7 @@
 using BuildingBlocks.Infrastructure.Api.Responses;
 using Gloss.Application.MergeRequests.PollAllRepositories;
 using Gloss.Application.Repositories.ListRepositories;
-using Gloss.Application.Repositories.UpdatePollCron;
+using Gloss.Application.Repositories.UpdateRepository;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gloss.Api.Repositories;
@@ -31,8 +31,8 @@ public static class RepositoryEndpoints
 
         group.MapPatch("/{id:guid}", async (
             Guid id,
-            UpdatePollCronCommand command,
-            [FromServices] UpdatePollCronHandler handler,
+            UpdateRepositoryCommand command,
+            [FromServices] UpdateRepositoryHandler handler,
             HttpContext ctx,
             CancellationToken cancellationToken) =>
         {

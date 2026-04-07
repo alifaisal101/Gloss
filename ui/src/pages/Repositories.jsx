@@ -5,7 +5,7 @@ export default function Repositories() {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [edits, setEdits] = useState({});
+  const [cronEdits, setCronEdits] = useState({});
   const [saving, setSaving] = useState({});
 
   useEffect(() => {
@@ -15,16 +15,28 @@ export default function Repositories() {
       .finally(() => setLoading(false));
   }, []);
 
-  function edit(id, value) {
-    setEdits(e => ({ ...e, [id]: value }));
+  function editCron(id, value) {
+    setCronEdits(e => ({ ...e, [id]: value }));
   }
 
-  async function save(repo) {
+  async function saveCron(repo) {
     setSaving(s => ({ ...s, [repo.id]: true }));
     try {
-      const updated = await api.updateRepository(repo.id, edits[repo.id]);
+      const updated = await api.updateRepository(repo.id, { pollCron: cronEdits[repo.id] });
       setRepos(rs => rs.map(r => r.id === repo.id ? updated : r));
-      setEdits(e => { const n = { ...e }; delete n[repo.id]; return n; });
+      setCronEdits(e => { const n = { ...e }; delete n[repo.id]; return n; });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSaving(s => { const n = { ...s }; delete n[repo.id]; return n; });
+    }
+  }
+
+  async function toggleAutoReview(repo) {
+    setSaving(s => ({ ...s, [repo.id]: true }));
+    try {
+      const updated = await api.updateRepository(repo.id, { autoReviewEnabled: !repo.autoReviewEnabled });
+      setRepos(rs => rs.map(r => r.id === repo.id ? updated : r));
     } catch (err) {
       setError(err);
     } finally {
@@ -55,31 +67,39 @@ export default function Repositories() {
           <thead>
             <tr>
               <th>Project</th>
-              <th>Clone path</th>
-              <th>Last fetch</th>
+              <th>Auto-review</th>
               <th>Poll schedule (cron)</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {repos.map(repo => {
-              const isDirty = edits[repo.id] !== undefined;
+              const isCronDirty = cronEdits[repo.id] !== undefined;
               return (
                 <tr key={repo.id}>
                   <td className="mono">{repo.projectPath}</td>
-                  <td className="mono muted">{repo.clonePath ?? '—'}</td>
-                  <td className="muted">{repo.lastFetchAt ? new Date(repo.lastFetchAt).toLocaleString() : '—'}</td>
+                  <td>
+                    <label className="toggle" title="Automatically review new MRs when they are pulled">
+                      <input
+                        type="checkbox"
+                        checked={repo.autoReviewEnabled}
+                        onChange={() => toggleAutoReview(repo)}
+                        disabled={saving[repo.id]}
+                      />
+                      {repo.autoReviewEnabled ? 'On' : 'Off'}
+                    </label>
+                  </td>
                   <td>
                     <input
                       className="cron-input"
-                      value={isDirty ? edits[repo.id] : (repo.pollCron ?? '')}
-                      onChange={e => edit(repo.id, e.target.value)}
-                      placeholder="Default from env"
+                      value={isCronDirty ? cronEdits[repo.id] : (repo.pollCron ?? '')}
+                      onChange={e => editCron(repo.id, e.target.value)}
+                      placeholder="Not used yet"
                     />
                   </td>
                   <td>
-                    {isDirty && (
-                      <button className="btn" onClick={() => save(repo)} disabled={saving[repo.id]}>
+                    {isCronDirty && (
+                      <button className="btn" onClick={() => saveCron(repo)} disabled={saving[repo.id]}>
                         {saving[repo.id] ? 'Saving…' : 'Save'}
                       </button>
                     )}
