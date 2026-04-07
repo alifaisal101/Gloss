@@ -32,6 +32,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:GlossDb"] = ConnectionString,
+                ["Hangfire:Enabled"] = "false",
             }));
 
         builder.ConfigureServices(services =>

@@ -11,10 +11,10 @@ public static class MergeRequestErrors
         new("MergeRequest.NotFound", "Merge request not found.");
 
     public static readonly DomainError GitProviderUnauthorized =
-        new("MergeRequest.GitProvider.Unauthorized", "Git provider rejected the request. Check your access token in Settings.");
+        new("MergeRequest.GitProvider.Rejected", "Git provider rejected the request. Check your access token in Settings.");
 
     public static readonly DomainError LlmProviderUnauthorized =
-        new("MergeRequest.LlmProvider.Unauthorized", "LLM provider rejected the request. Check your API key in Settings.");
+        new("MergeRequest.LlmProvider.Rejected", "LLM provider rejected the request. Check your API key in Settings.");
 
     public static readonly DomainError DiffTooLarge =
         new("MergeRequest.DiffTooLarge", "Diff is too large to review automatically. Break the MR into smaller changes.");
