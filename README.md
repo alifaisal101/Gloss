@@ -330,4 +330,7 @@ Appsettings value to configure the prompt sent to claude sdk
 **Support for gitlab CICD trigger**
 Claude auto pushes Reviews, separate from your reviews
 
+**Per-repository poll schedule**
+The `Repository` entity has a `PollCron` field intended for per-repository poll overrides. Currently all repositories share a single global schedule (`DefaultPollCron` in Config). Per-repository scheduling is a planned feature — the field is persisted and exposed in the UI but has no effect on job registration yet.
+
 **Force pull MRs**

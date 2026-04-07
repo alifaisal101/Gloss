@@ -41,8 +41,9 @@ export default function Repositories() {
         <h1>Repositories</h1>
       </div>
       <p className="page-desc">
-        Gloss tracks repositories automatically as MRs are discovered. Set a per-repository
-        poll schedule here to override the default cron from <code>DEFAULT_POLL_CRON</code>.
+        Gloss tracks repositories automatically as MRs are discovered.
+        The <em>Poll schedule</em> column is reserved for future per-repository scheduling — it has no effect right now.
+        All repositories are polled on the global schedule configured in Settings.
       </p>
 
       {repos.length === 0 ? (

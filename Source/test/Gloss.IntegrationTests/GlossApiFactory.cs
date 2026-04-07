@@ -23,6 +23,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
     public string ConnectionString => _postgres.GetConnectionString();
     public Mock<IGitClient> GitClient { get; } = new();
     public Mock<IReviewProvider> ReviewProvider { get; } = new();
+    public Mock<IJobScheduler> JobScheduler { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,7 +40,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         {
             services.AddSingleton(GitClient.Object);
             services.AddSingleton(ReviewProvider.Object);
-            services.AddSingleton(Mock.Of<IJobScheduler>());
+            services.AddSingleton(JobScheduler.Object);
         });
     }
 
@@ -56,6 +57,7 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         GitClient.Reset();
         ReviewProvider.Reset();
+        JobScheduler.Reset();
         GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         GitClient.Setup(x => x.GetMrShasAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))

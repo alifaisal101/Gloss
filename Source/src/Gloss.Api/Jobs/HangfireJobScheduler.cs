@@ -12,4 +12,9 @@ internal sealed class HangfireJobScheduler() : IJobScheduler
     {
         RecurringJob.AddOrUpdate<RepositoryPollJob>(PollAllJobId, job => job.ExecuteAsync(CancellationToken.None), cron);
     }
+
+    public void EnqueueReview(Guid mergeRequestId)
+    {
+        BackgroundJob.Enqueue<ReviewMergeRequestJob>(job => job.ExecuteAsync(mergeRequestId, CancellationToken.None));
+    }
 }
