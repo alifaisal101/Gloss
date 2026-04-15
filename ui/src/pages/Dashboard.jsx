@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 
-const STATE_ORDER = ['Pending', 'Ready', 'Published'];
+const STATE_ORDER = ['Reviewing', 'Pending', 'Ready', 'Published'];
 const STATE_LABEL = {
+  Reviewing: 'Being reviewed by AI',
   Pending: 'Awaiting review',
   Ready: 'Reviewed — ready to publish',
   Published: 'Published to Git platform',
@@ -11,17 +12,29 @@ const STATE_LABEL = {
 
 export default function Dashboard() {
   const [mrs, setMrs] = useState([]);
+  const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState(null);
 
   const load = useCallback(() =>
-    api.listMrs().then(setMrs).catch(setError)
+    Promise.all([
+      api.listMrs().then(setMrs),
+      api.getConfig().then(setConfig),
+    ]).catch(setError)
   , []);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
+
+  useEffect(() => {
+    if (!config?.isPolling) return;
+    const timer = setInterval(() => {
+      api.getConfig().then(setConfig).catch(() => {});
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [config?.isPolling]);
 
   async function handlePollNow() {
     setPolling(true);
@@ -38,6 +51,7 @@ export default function Dashboard() {
 
   if (loading) return <div className="loading">Loading…</div>;
 
+  const isPollingFromServer = config?.isPolling === true;
   const grouped = STATE_ORDER.reduce((acc, state) => {
     acc[state] = mrs.filter(mr => mr.state === state);
     return acc;
@@ -55,8 +69,8 @@ export default function Dashboard() {
           )}
         </div>
         <div className="page-actions">
-          <button className="btn" onClick={handlePollNow} disabled={polling}>
-            {polling ? 'Polling…' : 'Poll now'}
+          <button className="btn" onClick={handlePollNow} disabled={polling || isPollingFromServer}>
+            {polling || isPollingFromServer ? 'Polling…' : 'Poll now'}
           </button>
         </div>
       </div>
@@ -83,8 +97,8 @@ export default function Dashboard() {
       {mrs.length === 0 && (
         <div className="empty">
           No merge requests yet.{' '}
-          <button className="btn-ghost btn-sm" onClick={handlePollNow} disabled={polling}>
-            {polling ? 'Polling…' : 'Poll now'}
+          <button className="btn-ghost btn-sm" onClick={handlePollNow} disabled={polling || isPollingFromServer}>
+            {polling || isPollingFromServer ? 'Polling…' : 'Poll now'}
           </button>
         </div>
       )}

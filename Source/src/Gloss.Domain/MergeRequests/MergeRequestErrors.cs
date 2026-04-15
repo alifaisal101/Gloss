@@ -22,6 +22,9 @@ public static class MergeRequestErrors
     public static readonly DomainError NotReady =
         new("MergeRequest.NotReady", "Merge request must be in Ready state before publishing.");
 
+    public static readonly DomainError AlreadyReviewing =
+        new("MergeRequest.Review.Conflict", "Merge request is already being reviewed.");
+
     public static readonly DomainError MissingShas =
         new("MergeRequest.MissingShas", "Diff reference SHAs are missing. Re-pull the merge request to refresh them.");
 }

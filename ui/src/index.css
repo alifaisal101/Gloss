@@ -233,11 +233,12 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
   letter-spacing: 0.3px;
 }
 
-.state-pending   { background: #2d3c4a; color: #79c0ff; }
-.state-ready     { background: #0d4429; color: #3fb950; }
-.state-seen      { background: #2d2a20; color: #d29922; }
-.state-staged    { background: #2d1b3d; color: #bc8cff; }
-.state-published { background: #1a2a1a; color: #56d364; }
+.state-pending    { background: #2d3c4a; color: #79c0ff; }
+.state-reviewing  { background: #2d2a20; color: #d4a017; }
+.state-ready      { background: #0d4429; color: #3fb950; }
+.state-seen       { background: #2d2a20; color: #d29922; }
+.state-staged     { background: #2d1b3d; color: #bc8cff; }
+.state-published  { background: #1a2a1a; color: #56d364; }
 
 /* ── MR Detail ── */
 
@@ -293,6 +294,14 @@ code, .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
   color: var(--text-muted);
   padding: 6px 12px;
   border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.reviewing-indicator {
+  font-size: 13px;
+  color: #d4a017;
+  padding: 6px 12px;
+  border: 1px solid #4a3a10;
   border-radius: 6px;
 }
 

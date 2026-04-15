@@ -15,7 +15,8 @@ public sealed record ConfigReadModel(
     bool? LlmReasoningEnabled,
     int? LlmMaxTokens,
     int? LlmThinkingBudget,
-    string? DefaultPollCron)
+    string? DefaultPollCron,
+    bool IsPolling)
 {
     public static readonly ConfigReadModel NotConfigured = new(
         IsConfigured: false,
@@ -29,7 +30,8 @@ public sealed record ConfigReadModel(
         LlmReasoningEnabled: null,
         LlmMaxTokens: null,
         LlmThinkingBudget: null,
-        DefaultPollCron: null);
+        DefaultPollCron: null,
+        IsPolling: false);
 
     public static ConfigReadModel From(Config config, ISecretEncryptor encryptor)
     {
@@ -48,6 +50,7 @@ public sealed record ConfigReadModel(
             LlmReasoningEnabled: config.LlmReasoningEnabled,
             LlmMaxTokens: config.LlmMaxTokens,
             LlmThinkingBudget: config.LlmThinkingBudget,
-            DefaultPollCron: config.DefaultPollCron);
+            DefaultPollCron: config.DefaultPollCron,
+            IsPolling: config.IsPolling);
     }
 }

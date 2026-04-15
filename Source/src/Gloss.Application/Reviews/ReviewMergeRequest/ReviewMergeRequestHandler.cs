@@ -16,6 +16,10 @@ public sealed class ReviewMergeRequestHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
         if (mr.Diff.Length > 50_000) return MergeRequestErrors.DiffTooLarge;
+        if (mr.State == MergeRequestState.Reviewing) return MergeRequestErrors.AlreadyReviewing;
+
+        mr.MarkReviewing();
+        await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         IReadOnlyList<ReviewComment> comments;
         try

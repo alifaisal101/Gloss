@@ -18,6 +18,9 @@ public sealed class Config : AggregateRoot<Guid>
     public int LlmMaxTokens { get; private set; }
     public int LlmThinkingBudget { get; private set; }
     public string DefaultPollCron { get; private set; } = null!;
+    public bool IsPolling { get; private set; }
+
+    public void SetPolling(bool polling) => IsPolling = polling;
 
     private Config() : base(SingletonId) { }
 

@@ -55,6 +55,7 @@ export default function MRDetail() {
   // GitLab returns commits newest-first; reverse so index 0 = oldest
   const commits = [...(mr.commits ?? [])].reverse();
   const canReview = mr.state === 'Pending' || mr.state === 'Ready';
+  const isReviewing = mr.state === 'Reviewing';
   const canPublish = mr.state === 'Ready';
 
   const activeDiff = selectedCommit ? selectedCommit.diff : mr.diff;
@@ -66,6 +67,9 @@ export default function MRDetail() {
         <div className="mr-detail-top">
           <Link to="/" className="back-link">← Merge Requests</Link>
           <div className="mr-actions">
+            {isReviewing && (
+              <span className="reviewing-indicator">Review in progress…</span>
+            )}
             {canReview && (
               <button className="btn btn-secondary" onClick={handleReview} disabled={reviewing || publishing}>
                 {reviewing ? 'Reviewing…' : mr.state === 'Ready' ? 'Re-review' : 'Trigger Review'}
