@@ -7,11 +7,12 @@ public sealed record RepositoryReadModel(
     string ProjectPath,
     string Provider,
     string? PollCron,
-    bool AutoReviewEnabled)
+    bool AutoReviewEnabled,
+    string? LocalClonePath)
 {
     public static RepositoryReadModel From(Repository repository)
     {
         ArgumentNullException.ThrowIfNull(repository);
-        return new(repository.Id, repository.ProjectPath, repository.Provider, repository.PollCron, repository.AutoReviewEnabled);
+        return new(repository.Id, repository.ProjectPath, repository.Provider, repository.PollCron, repository.AutoReviewEnabled, repository.LocalClonePath);
     }
 }

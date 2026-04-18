@@ -1,6 +1,8 @@
 using Gloss.Application.Jobs;
 using Gloss.Application.MergeRequests;
+using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
+using Gloss.Domain.Repositories;
 using Gloss.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -16,14 +18,21 @@ namespace Gloss.IntegrationTests;
 
 public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private static readonly SemaphoreSlim Lock = new(1, 1);
+    private static PostgreSqlContainer? _sharedContainer;
+    private static int _refCount;
 
-    public string ConnectionString => _postgres.GetConnectionString();
+    private readonly string _databaseName = $"gloss_{Guid.NewGuid():N}";
+
+    public string ConnectionString => new NpgsqlConnectionStringBuilder(_sharedContainer!.GetConnectionString())
+    {
+        Database = _databaseName
+    }.ToString();
+
     public Mock<IGitClient> GitClient { get; } = new();
     public Mock<IReviewProvider> ReviewProvider { get; } = new();
     public Mock<IJobScheduler> JobScheduler { get; } = new();
+    public Mock<IRepoManager> RepoManager { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -41,12 +50,32 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
             services.AddSingleton(GitClient.Object);
             services.AddSingleton(ReviewProvider.Object);
             services.AddSingleton(JobScheduler.Object);
+            services.AddSingleton(RepoManager.Object);
         });
     }
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
+        await Lock.WaitAsync();
+        try
+        {
+            if (_sharedContainer is null)
+            {
+                _sharedContainer = new PostgreSqlBuilder().WithImage("postgres:16-alpine").Build();
+                await _sharedContainer.StartAsync();
+            }
+            Interlocked.Increment(ref _refCount);
+        }
+        finally
+        {
+            Lock.Release();
+        }
+
+        await using var adminConn = new NpgsqlConnection(_sharedContainer.GetConnectionString());
+        await adminConn.OpenAsync();
+        await using var createCmd = adminConn.CreateCommand();
+        createCmd.CommandText = $"""CREATE DATABASE "{_databaseName}" """;
+        await createCmd.ExecuteNonQueryAsync();
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<GlossDbContext>();
@@ -58,10 +87,14 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         GitClient.Reset();
         ReviewProvider.Reset();
         JobScheduler.Reset();
+        RepoManager.Reset();
         GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         GitClient.Setup(x => x.GetMrShasAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Gloss.Application.MergeRequests.MrShasData("base-sha", "head-sha", "start-sha"));
+            .ReturnsAsync(new MrShasData("base-sha", "head-sha", "start-sha"));
+        RepoManager
+            .Setup(r => r.EnsureReadyAsync(It.IsAny<Repository>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("/repos/test");
 
         await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
@@ -81,7 +114,29 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public new async Task DisposeAsync()
     {
-        await _postgres.DisposeAsync();
         await base.DisposeAsync();
+
+        await using var adminConn = new NpgsqlConnection(_sharedContainer!.GetConnectionString());
+        await adminConn.OpenAsync();
+        await using var dropCmd = adminConn.CreateCommand();
+        dropCmd.CommandText = $"""DROP DATABASE IF EXISTS "{_databaseName}" WITH (FORCE)""";
+        await dropCmd.ExecuteNonQueryAsync();
+
+        if (Interlocked.Decrement(ref _refCount) == 0)
+        {
+            await Lock.WaitAsync();
+            try
+            {
+                if (_refCount == 0)
+                {
+                    await _sharedContainer.DisposeAsync();
+                    _sharedContainer = null;
+                }
+            }
+            finally
+            {
+                Lock.Release();
+            }
+        }
     }
 }
