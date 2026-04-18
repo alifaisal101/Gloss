@@ -2,8 +2,10 @@ using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Events;
 using BuildingBlocks.Infrastructure.Persistence;
 using Gloss.Application.MergeRequests;
+using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
 using Gloss.Infrastructure.MergeRequests;
+using Gloss.Infrastructure.Repositories;
 using Gloss.Infrastructure.Reviews;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,7 @@ public static class GlossInfrastructureServices
         services.AddModuleDbContext<GlossDbContext>(configuration, "GlossDb");
         services.AddBuildingBlocksPersistence(typeof(GlossDbContext).Assembly);
         services.AddBuildingBlocksEvents();
+        services.AddScoped<IRepoManager, RepoManager>();
         services.AddHttpClient<IGitClient, GitLabClient>();
         services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>(client =>
             client.BaseAddress = new Uri(configuration["Anthropic:BaseUrl"]!));

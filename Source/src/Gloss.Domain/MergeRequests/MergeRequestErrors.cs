@@ -27,4 +27,7 @@ public static class MergeRequestErrors
 
     public static readonly DomainError MissingShas =
         new("MergeRequest.MissingShas", "Diff reference SHAs are missing. Re-pull the merge request to refresh them.");
+
+    public static readonly DomainError RepoCloneFailed =
+        new("MergeRequest.RepoClone.Failed", "Failed to clone or fetch the repository. Check network access and your Git token.");
 }

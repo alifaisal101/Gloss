@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- App -->
+    <PackageVersion Include="LibGit2Sharp" Version="0.30.0" />
     <PackageVersion Include="Asp.Versioning.Http" Version="8.1.1" />
     <PackageVersion Include="AspNetCore.HealthChecks.Hangfire" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />

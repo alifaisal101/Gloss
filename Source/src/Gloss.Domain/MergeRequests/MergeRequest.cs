@@ -44,6 +44,7 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public void MarkReviewing() => State = MergeRequestState.Reviewing;
     public void MarkReady() => State = MergeRequestState.Ready;
     public void MarkPublished() => State = MergeRequestState.Published;
+    public void ResetToPending() => State = MergeRequestState.Pending;
 
     public void Update(
         string title,

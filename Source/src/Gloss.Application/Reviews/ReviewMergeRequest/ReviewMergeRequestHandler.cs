@@ -1,13 +1,17 @@
 using System.Net;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
+using Gloss.Application.Repositories;
 using Gloss.Domain.MergeRequests;
+using Gloss.Domain.Repositories;
 
 namespace Gloss.Application.Reviews.ReviewMergeRequest;
 
 public sealed class ReviewMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
+    IRepositoryRepository repositoryRepository,
     IDraftCommentRepository draftCommentRepository,
+    IRepoManager repoManager,
     IReviewProvider reviewProvider,
     IDomainContext domainContext)
 {
@@ -17,9 +21,27 @@ public sealed class ReviewMergeRequestHandler(
         if (mr is null) return MergeRequestErrors.NotFound;
         if (mr.Diff.Length > 50_000) return MergeRequestErrors.DiffTooLarge;
         if (mr.State == MergeRequestState.Reviewing) return MergeRequestErrors.AlreadyReviewing;
+        if (mr.HeadSha is null) return MergeRequestErrors.MissingShas;
+
+        var repository = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
+        if (repository is null) return MergeRequestErrors.RepositoryNotFound;
 
         mr.MarkReviewing();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        string localPath;
+        try
+        {
+            localPath = await repoManager.EnsureReadyAsync(repository, mr.HeadSha, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            mr.ResetToPending();
+            await domainContext.CommitAsync(CancellationToken.None).ConfigureAwait(false);
+            return MergeRequestErrors.RepoCloneFailed;
+        }
+
+        repository.SetCloned(localPath);
 
         IReadOnlyList<ReviewComment> comments;
         try
@@ -40,7 +62,6 @@ public sealed class ReviewMergeRequestHandler(
                 DraftComment.Create(mergeRequestId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning));
 
         mr.MarkReady();
-
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }

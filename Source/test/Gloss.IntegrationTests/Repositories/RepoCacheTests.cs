@@ -85,8 +85,10 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
     public async Task Review_OnSubsequentReview_RepoManagerReceivesExistingLocalClonePath()
     {
         var mrId = await SetupPendingMrAsync();
+        var capturedPaths = new List<string?>();
         factory.RepoManager
             .Setup(r => r.EnsureReadyAsync(It.IsAny<Repository>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<Repository, string, CancellationToken>((repo, _, _) => capturedPaths.Add(repo.LocalClonePath))
             .ReturnsAsync("/repos/group/project-a");
         factory.ReviewProvider
             .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -95,12 +97,7 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
-        factory.RepoManager.Verify(
-            r => r.EnsureReadyAsync(
-                It.Is<Repository>(repo => repo.LocalClonePath == "/repos/group/project-a"),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()),
-            Times.Once());
+        capturedPaths.Should().Equal([null, "/repos/group/project-a"]);
     }
 
     private async Task<Guid> SetupPendingMrAsync()
