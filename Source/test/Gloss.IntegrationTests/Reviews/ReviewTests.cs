@@ -39,7 +39,7 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
     {
         var mrId = await SetupPendingMrAsync();
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("src/Foo.cs", 10, "Null check missing", null)]);
 
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
@@ -53,7 +53,7 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
     {
         var mrId = await SetupPendingMrAsync();
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
                 new("src/Foo.cs", 10, "Null check missing", "Parameter can be null here"),
                 new("src/Bar.cs", 42, "Magic number", null),
@@ -72,12 +72,12 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
     {
         var mrId = await SetupPendingMrAsync();
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("src/Foo.cs", 10, "First review comment", null)]);
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("src/Bar.cs", 5, "Second review comment", null)]);
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 

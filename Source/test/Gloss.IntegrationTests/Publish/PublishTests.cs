@@ -127,7 +127,7 @@ public sealed class PublishTests(GlossApiFactory factory) : IClassFixture<GlossA
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(comments ?? [new("src/Foo.cs", 10, "Null check missing", null)]);
 
         var mrs = await _client.GetFromJsonAsync<MrSummary[]>($"/api/repositories/{repoId}/merge-requests");

@@ -46,7 +46,8 @@ public sealed class ReviewMergeRequestHandler(
         IReadOnlyList<ReviewComment> comments;
         try
         {
-            comments = await reviewProvider.ReviewAsync(mr.Diff, cancellationToken).ConfigureAwait(false);
+            var context = new ReviewContext(mr.Diff, localPath);
+            comments = await reviewProvider.ReviewAsync(context, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {

@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Gloss.Application.MergeRequests;
 using Gloss.Application.Repositories;
+using Gloss.Application.Reviews;
 using Gloss.Domain.Repositories;
 using Moq;
 using Xunit;
@@ -26,7 +27,7 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
             .Callback(() => callOrder.Add("repo"))
             .ReturnsAsync("/repos/group/project-a");
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .Callback(() => callOrder.Add("review"))
             .ReturnsAsync([]);
 
@@ -40,7 +41,7 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
     {
         var mrId = await SetupPendingMrAsync();
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
@@ -72,7 +73,7 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
             .Setup(r => r.EnsureReadyAsync(It.IsAny<Repository>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("/repos/group/project-a");
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
@@ -91,7 +92,7 @@ public sealed class RepoCacheTests(GlossApiFactory factory) : IClassFixture<Glos
             .Callback<Repository, string, CancellationToken>((repo, _, _) => capturedPaths.Add(repo.LocalClonePath))
             .ReturnsAsync("/repos/group/project-a");
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);

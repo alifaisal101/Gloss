@@ -21,8 +21,8 @@ public sealed class ReviewingStateTests(GlossApiFactory factory) : IClassFixture
         var stateWhenLlmCalled = "unknown";
 
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(async (string _, CancellationToken _) =>
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
+            .Returns(async (ReviewContext _, CancellationToken _) =>
             {
                 var mr = await _client.GetFromJsonAsync<MrStateResponse>($"/api/merge-requests/{mrId}");
                 stateWhenLlmCalled = mr?.State ?? "null";
@@ -43,8 +43,8 @@ public sealed class ReviewingStateTests(GlossApiFactory factory) : IClassFixture
         var callCount = 0;
 
         factory.ReviewProvider
-            .Setup(p => p.ReviewAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(async (string _, CancellationToken _) =>
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
+            .Returns(async (ReviewContext _, CancellationToken _) =>
             {
                 if (Interlocked.Increment(ref callCount) == 1)
                 {

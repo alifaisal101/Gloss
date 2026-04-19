@@ -16,6 +16,7 @@
     <Project Path="test/Gloss.IntegrationTests/Gloss.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path="..\docs\agentic-review.md" />
     <File Path="..\README.md" />
     <File Path=".editorconfig" />
     <File Path="nuget.config" />

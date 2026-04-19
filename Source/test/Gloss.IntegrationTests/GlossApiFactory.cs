@@ -4,6 +4,8 @@ using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
 using Gloss.Domain.Repositories;
 using Gloss.Infrastructure;
+using Gloss.Infrastructure.Reviews;
+using Gloss.Infrastructure.Reviews.Anthropic;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +18,7 @@ using Xunit;
 
 namespace Gloss.IntegrationTests;
 
-public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private static readonly SemaphoreSlim Lock = new(1, 1);
     private static PostgreSqlContainer? _sharedContainer;
@@ -33,6 +35,10 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
     public Mock<IReviewProvider> ReviewProvider { get; } = new();
     public Mock<IJobScheduler> JobScheduler { get; } = new();
     public Mock<IRepoManager> RepoManager { get; } = new();
+    internal Mock<IClaudeApiClient> ClaudeApiClient { get; } = new();
+    internal Mock<IReviewFileSystem> ReviewFileSystem { get; } = new();
+
+    protected virtual bool UseRealReviewProvider => false;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -47,10 +53,25 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
         builder.ConfigureServices(services =>
         {
+            foreach (var d in services
+                .Where(d => d.ImplementationType?.FullName?.StartsWith("Hangfire.", StringComparison.Ordinal) == true
+                         || d.ImplementationFactory?.Method.DeclaringType?.FullName?.StartsWith("Hangfire.", StringComparison.Ordinal) == true)
+                .ToList())
+            {
+                services.Remove(d);
+            }
             services.AddSingleton(GitClient.Object);
-            services.AddSingleton(ReviewProvider.Object);
             services.AddSingleton(JobScheduler.Object);
             services.AddSingleton(RepoManager.Object);
+            if (UseRealReviewProvider)
+            {
+                services.AddSingleton(ClaudeApiClient.Object);
+                services.AddSingleton(ReviewFileSystem.Object);
+            }
+            else
+            {
+                services.AddSingleton(ReviewProvider.Object);
+            }
         });
     }
 
@@ -88,6 +109,8 @@ public sealed class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLife
         ReviewProvider.Reset();
         JobScheduler.Reset();
         RepoManager.Reset();
+        ClaudeApiClient.Reset();
+        ReviewFileSystem.Reset();
         GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         GitClient.Setup(x => x.GetMrShasAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))

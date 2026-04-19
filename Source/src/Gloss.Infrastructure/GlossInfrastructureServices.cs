@@ -7,6 +7,7 @@ using Gloss.Application.Reviews;
 using Gloss.Infrastructure.MergeRequests;
 using Gloss.Infrastructure.Repositories;
 using Gloss.Infrastructure.Reviews;
+using Gloss.Infrastructure.Reviews.Anthropic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,8 +24,10 @@ public static class GlossInfrastructureServices
         services.AddBuildingBlocksEvents();
         services.AddScoped<IRepoManager, RepoManager>();
         services.AddHttpClient<IGitClient, GitLabClient>();
-        services.AddHttpClient<IReviewProvider, AnthropicReviewProvider>(client =>
+        services.AddHttpClient<IClaudeApiClient, AnthropicApiClient>(client =>
             client.BaseAddress = new Uri(configuration["Anthropic:BaseUrl"]!));
+        services.AddSingleton<IReviewFileSystem, RepoFileSystem>();
+        services.AddScoped<IReviewProvider, AnthropicReviewProvider>();
         return services;
     }
 }
