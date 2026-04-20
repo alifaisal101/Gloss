@@ -1,6 +1,7 @@
 using BuildingBlocks.Infrastructure.EfCore;
 using Gloss.Domain.Configs;
 using Gloss.Domain.MergeRequests;
+using Gloss.Domain.Projection;
 using Gloss.Domain.Repositories;
 using Gloss.Infrastructure.Events;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ public sealed class GlossDbContext(DbContextOptions<GlossDbContext> options) : M
     public DbSet<MergeRequest> MergeRequests => Set<MergeRequest>();
     public DbSet<DraftComment> DraftComments => Set<DraftComment>();
     public DbSet<EventRecord> Events => Set<EventRecord>();
+    public DbSet<ReviewerProjection> ReviewerProjections => Set<ReviewerProjection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

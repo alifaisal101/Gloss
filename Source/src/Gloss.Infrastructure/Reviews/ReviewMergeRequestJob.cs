@@ -1,6 +1,6 @@
 using Gloss.Application.Reviews.ReviewMergeRequest;
 
-namespace Gloss.Infrastructure.Jobs;
+namespace Gloss.Infrastructure.Reviews;
 
 public sealed class ReviewMergeRequestJob(ReviewMergeRequestHandler handler)
 {

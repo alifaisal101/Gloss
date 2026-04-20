@@ -1,6 +1,6 @@
 using Gloss.Application.MergeRequests.PollAllRepositories;
 
-namespace Gloss.Infrastructure.Jobs;
+namespace Gloss.Infrastructure.Repositories;
 
 public sealed class RepositoryPollJob(PollAllRepositoriesHandler handler)
 {

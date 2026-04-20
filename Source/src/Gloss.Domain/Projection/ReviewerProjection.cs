@@ -21,11 +21,13 @@ public sealed class ReviewerProjection : AggregateRoot<Guid>
         return p;
     }
 
-    public void Update(string content, long lastProcessedGlobalPosition)
+    public ReviewerProjection NextVersion(string content, long lastProcessedGlobalPosition)
     {
-        Content = content;
-        Version++;
-        LastProcessedGlobalPosition = lastProcessedGlobalPosition;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        var p = new ReviewerProjection();
+        p.Content = content;
+        p.Version = Version + 1;
+        p.LastProcessedGlobalPosition = lastProcessedGlobalPosition;
+        p.UpdatedAt = DateTimeOffset.UtcNow;
+        return p;
     }
 }

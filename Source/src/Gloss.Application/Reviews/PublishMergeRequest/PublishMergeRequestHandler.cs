@@ -2,6 +2,7 @@ using System.Net;
 using BuildingBlocks.Application.EventSourcing;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
+using Gloss.Application.Jobs;
 using Gloss.Application.MergeRequests;
 using Gloss.Domain.MergeRequests;
 using Gloss.Domain.MergeRequests.Events;
@@ -15,6 +16,7 @@ public sealed class PublishMergeRequestHandler(
     IRepositoryRepository repositoryRepository,
     IGitClient gitClient,
     IEventStore eventStore,
+    IJobScheduler jobScheduler,
     IDomainContext domainContext)
 {
     public async Task<VoidResult> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
@@ -53,6 +55,7 @@ public sealed class PublishMergeRequestHandler(
                 new CommentAccepted(mergeRequestId, comment.Id, comment.Body),
                 cancellationToken).ConfigureAwait(false);
 
+        jobScheduler.EnqueueProjectionUpdate();
         return Result.Success();
     }
 }

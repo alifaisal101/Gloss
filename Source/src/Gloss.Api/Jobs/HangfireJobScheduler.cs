@@ -1,5 +1,7 @@
 using Gloss.Application.Jobs;
-using Gloss.Infrastructure.Jobs;
+using Gloss.Infrastructure.Projection;
+using Gloss.Infrastructure.Repositories;
+using Gloss.Infrastructure.Reviews;
 using Hangfire;
 
 namespace Gloss.Api.Jobs;
@@ -19,5 +21,5 @@ internal sealed class HangfireJobScheduler() : IJobScheduler
     }
 
     public void EnqueueProjectionUpdate()
-        => throw new NotSupportedException();
+        => BackgroundJob.Enqueue<UpdateProjectionJob>(job => job.ExecuteAsync(CancellationToken.None));
 }

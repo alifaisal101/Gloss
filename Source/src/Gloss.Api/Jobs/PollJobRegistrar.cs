@@ -1,7 +1,7 @@
 using BuildingBlocks.Infrastructure.Api.Jobs;
 using Gloss.Domain.Configs;
 using Hangfire;
-using Gloss.Infrastructure.Jobs;
+using Gloss.Infrastructure.Repositories;
 
 namespace Gloss.Api.Jobs;
 

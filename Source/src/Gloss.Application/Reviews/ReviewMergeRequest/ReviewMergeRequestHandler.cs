@@ -3,6 +3,7 @@ using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
 using Gloss.Application.Repositories;
 using Gloss.Domain.MergeRequests;
+using Gloss.Domain.Projection;
 using Gloss.Domain.Repositories;
 
 namespace Gloss.Application.Reviews.ReviewMergeRequest;
@@ -13,6 +14,7 @@ public sealed class ReviewMergeRequestHandler(
     IDraftCommentRepository draftCommentRepository,
     IRepoManager repoManager,
     IReviewProvider reviewProvider,
+    IReviewerProjectionRepository projectionRepository,
     IDomainContext domainContext)
 {
     public async Task<VoidResult> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
@@ -43,7 +45,8 @@ public sealed class ReviewMergeRequestHandler(
         IReadOnlyList<ReviewComment> comments;
         try
         {
-            var context = new ReviewContext(mr.Diff, localPath);
+            var projection = await projectionRepository.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+            var context = new ReviewContext(mr.Diff, localPath, projection?.Content);
             comments = await reviewProvider.ReviewAsync(context, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)

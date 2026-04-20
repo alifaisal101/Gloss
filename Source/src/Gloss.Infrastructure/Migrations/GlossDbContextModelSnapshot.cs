@@ -198,6 +198,30 @@ namespace Gloss.Infrastructure.Migrations
                     b.ToTable("mr_commits", (string)null);
                 });
 
+            modelBuilder.Entity("Gloss.Domain.Projection.ReviewerProjection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("LastProcessedGlobalPosition")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("reviewer_projections", (string)null);
+                });
+
             modelBuilder.Entity("Gloss.Domain.Repositories.Repository", b =>
                 {
                     b.Property<Guid>("Id")

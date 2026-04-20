@@ -11,9 +11,29 @@ public sealed class UpdateProjectionHandler(
     IProjectionEngine projectionEngine,
     IDomainContext domainContext)
 {
-    public Task<VoidResult> HandleAsync(CancellationToken cancellationToken)
+    public async Task<VoidResult> HandleAsync(CancellationToken cancellationToken)
     {
-        _ = (projectionRepository, eventStore, projectionEngine, domainContext);
-        throw new NotSupportedException();
+        var current = await projectionRepository.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var fromPosition = current is not null ? current.LastProcessedGlobalPosition + 1 : 0;
+
+        var newEvents = await eventStore.QueryAsync(
+            new EventQuery { FromGlobalPosition = fromPosition },
+            cancellationToken).ConfigureAwait(false);
+
+        if (newEvents.Count == 0) return Result.Success();
+
+        var updated = await projectionEngine.BuildUpdatedProjectionAsync(
+            current?.Content ?? string.Empty,
+            newEvents,
+            cancellationToken).ConfigureAwait(false);
+
+        var lastPosition = newEvents.Max(e => e.GlobalPosition);
+        var next = current is null
+            ? ReviewerProjection.Seed(updated, lastPosition)
+            : current.NextVersion(updated, lastPosition);
+
+        domainContext.Save<ReviewerProjection, Guid>(next);
+        await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
     }
 }
