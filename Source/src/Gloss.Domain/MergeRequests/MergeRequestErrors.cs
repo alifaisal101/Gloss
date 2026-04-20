@@ -30,4 +30,7 @@ public static class MergeRequestErrors
 
     public static readonly DomainError RepoCloneFailed =
         new("MergeRequest.RepoClone.Failed", "Failed to clone or fetch the repository. Check network access and your Git token.");
+
+    public static readonly DomainError CommentNotFound =
+        new("DraftComment.NotFound", "Comment not found.");
 }

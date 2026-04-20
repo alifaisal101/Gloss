@@ -19,6 +19,14 @@ export const api = {
   publishMr: (id) => request('POST', `/merge-requests/${id}/publish`),
   pollAll: () => request('POST', '/repositories/poll-all'),
 
+  // Comments
+  addComment: (mrId, filePath, line, body, reasoning) =>
+    request('POST', `/merge-requests/${mrId}/comments`, { filePath, line, body, reasoning }),
+  editComment: (mrId, commentId, filePath, line, body, reasoning) =>
+    request('PUT', `/merge-requests/${mrId}/comments/${commentId}`, { filePath, line, body, reasoning }),
+  deleteComment: (mrId, commentId) =>
+    request('DELETE', `/merge-requests/${mrId}/comments/${commentId}`),
+
   // Repositories
   listRepositories: () => request('GET', '/repositories'),
   updateRepository: (id, fields) =>

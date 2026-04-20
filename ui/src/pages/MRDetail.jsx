@@ -48,6 +48,23 @@ export default function MRDetail() {
     }
   }
 
+  async function handleAddComment(filePath, lineNumber, body, reasoning) {
+    await api.addComment(id, filePath, lineNumber, body, reasoning);
+    setMr(await api.getMr(id));
+  }
+
+  async function handleEditComment(commentId, body, editReason) {
+    const comment = mr.comments.find(c => c.id === commentId);
+    if (!comment) return;
+    await api.editComment(id, commentId, comment.filePath, comment.lineNumber, body, comment.reasoning);
+    setMr(await api.getMr(id));
+  }
+
+  async function handleDeleteComment(commentId, deleteReason) {
+    await api.deleteComment(id, commentId);
+    setMr(await api.getMr(id));
+  }
+
   if (loading) return <div className="loading">Loading…</div>;
   if (error && !mr) return <div className="error">Failed to load: {error.message}</div>;
 
@@ -168,9 +185,9 @@ export default function MRDetail() {
       <DiffView
         diff={activeDiff}
         comments={activeComments}
-        onEditComment={() => {}}
-        onDeleteComment={() => {}}
-        onAddComment={() => {}}
+        onEditComment={handleEditComment}
+        onDeleteComment={handleDeleteComment}
+        onAddComment={handleAddComment}
       />
     </div>
   );

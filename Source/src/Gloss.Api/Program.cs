@@ -38,6 +38,7 @@ app.MapBuildingBlocksHealthChecks();
 app.MapConfigEndpoints();
 app.MapRepositoryEndpoints();
 app.MapMergeRequestEndpoints();
+app.MapDraftCommentEndpoints();
 app.MapJobEndpoints();
 
 await app.RunAsync().ConfigureAwait(false);
