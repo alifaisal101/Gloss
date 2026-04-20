@@ -1,11 +1,7 @@
 using System.Net.Http.Json;
-using FluentAssertions;
-using Gloss.Application.MergeRequests;
-using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
 using Gloss.Domain.Repositories;
 using Moq;
-using Xunit;
 
 namespace Gloss.IntegrationTests.Repositories;
 

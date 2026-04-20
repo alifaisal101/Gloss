@@ -5,11 +5,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Moq" />
-    <PackageReference Include="Npgsql" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -18,10 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Gloss.Api\Gloss.Api.csproj" />
+    <ProjectReference Include="..\..\src\Gloss.Application\Gloss.Application.csproj" />
+    <ProjectReference Include="..\..\src\Gloss.Domain\Gloss.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="AwesomeAssertions" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,4 @@
 using BuildingBlocks.Domain.Models.Pagination;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BuildingBlocks.Infrastructure.Api.Endpoints;

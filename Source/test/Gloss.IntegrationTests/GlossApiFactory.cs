@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Npgsql;
 using Testcontainers.PostgreSql;
-using Xunit;
 
 namespace Gloss.IntegrationTests;
 

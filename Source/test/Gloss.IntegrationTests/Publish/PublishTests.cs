@@ -1,10 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
-using Gloss.Application.MergeRequests;
 using Gloss.Application.Reviews;
 using Moq;
-using Xunit;
 
 namespace Gloss.IntegrationTests.Publish;
 

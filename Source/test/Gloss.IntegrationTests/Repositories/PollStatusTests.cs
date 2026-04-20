@@ -1,9 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Gloss.Application.MergeRequests;
 using Moq;
-using Xunit;
 
 namespace Gloss.IntegrationTests.Repositories;
 

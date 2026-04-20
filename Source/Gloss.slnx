@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/Gloss.IntegrationTests/Gloss.IntegrationTests.csproj" />
+    <Project Path="test/Gloss.UnitTests/Gloss.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="..\docs\agentic-review.md" />

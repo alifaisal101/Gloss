@@ -2,7 +2,6 @@ using BuildingBlocks.Infrastructure.Api.Jobs;
 using Gloss.Domain.Configs;
 using Hangfire;
 using Gloss.Infrastructure.Jobs;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Gloss.Api.Jobs;
 
