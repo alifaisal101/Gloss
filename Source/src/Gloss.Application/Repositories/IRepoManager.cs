@@ -5,4 +5,5 @@ namespace Gloss.Application.Repositories;
 public interface IRepoManager
 {
     Task<string> EnsureReadyAsync(Repository repository, string headSha, CancellationToken cancellationToken);
+    Task DeleteLocalCloneAsync(string localClonePath, CancellationToken cancellationToken);
 }

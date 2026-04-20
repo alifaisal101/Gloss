@@ -1,5 +1,6 @@
 using BuildingBlocks.Infrastructure.Api.Responses;
 using Gloss.Application.MergeRequests.PollAllRepositories;
+using Gloss.Application.Repositories.DeleteRepository;
 using Gloss.Application.Repositories.ListRepositories;
 using Gloss.Application.Repositories.UpdateRepository;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,16 @@ public static class RepositoryEndpoints
         {
             var result = await handler.HandleAsync(command with { RepositoryId = id }, cancellationToken).ConfigureAwait(false);
             return result.ToOk(ctx);
+        });
+
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            [FromServices] DeleteRepositoryHandler handler,
+            HttpContext ctx,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(id, cancellationToken).ConfigureAwait(false);
+            return result.ToNoContent(ctx);
         });
 
         return app;

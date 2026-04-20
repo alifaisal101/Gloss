@@ -1,3 +1,4 @@
+using Gloss.Application.Repositories.DeleteRepository;
 using Gloss.Application.Repositories.ListRepositories;
 using Gloss.Application.Repositories.UpdateRepository;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public static class RepositoryApplicationServices
     {
         services.AddScoped<ListRepositoriesHandler>();
         services.AddScoped<UpdateRepositoryHandler>();
+        services.AddScoped<DeleteRepositoryHandler>();
         return services;
     }
 }

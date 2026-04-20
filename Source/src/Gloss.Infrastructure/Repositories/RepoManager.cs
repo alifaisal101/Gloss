@@ -51,6 +51,13 @@ internal sealed class RepoManager(
         Git.Repository.Clone(cloneUrl, localPath, options);
     }
 
+    public Task DeleteLocalCloneAsync(string localClonePath, CancellationToken cancellationToken)
+    {
+        if (Directory.Exists(localClonePath))
+            Directory.Delete(localClonePath, recursive: true);
+        return Task.CompletedTask;
+    }
+
     private static void Fetch(string localPath, string token)
     {
         using var repo = new Git.Repository(localPath);
