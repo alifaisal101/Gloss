@@ -1,5 +1,6 @@
 using Gloss.Application.MergeRequests.AddDraftComment;
 using Gloss.Application.MergeRequests.DeleteDraftComment;
+using Gloss.Application.MergeRequests.DeleteMergeRequest;
 using Gloss.Application.MergeRequests.EditDraftComment;
 using Gloss.Application.MergeRequests.GetMergeRequest;
 using Gloss.Application.MergeRequests.ListAllMergeRequests;
@@ -22,6 +23,7 @@ public static class MergeRequestApplicationServices
         services.AddScoped<AddDraftCommentHandler>();
         services.AddScoped<EditDraftCommentHandler>();
         services.AddScoped<DeleteDraftCommentHandler>();
+        services.AddScoped<DeleteMergeRequestHandler>();
         return services;
     }
 }

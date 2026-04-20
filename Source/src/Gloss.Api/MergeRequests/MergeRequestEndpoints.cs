@@ -1,4 +1,5 @@
 using BuildingBlocks.Infrastructure.Api.Responses;
+using Gloss.Application.MergeRequests.DeleteMergeRequest;
 using Gloss.Application.MergeRequests.GetMergeRequest;
 using Gloss.Application.MergeRequests.ListAllMergeRequests;
 using Gloss.Application.MergeRequests.ListMergeRequests;
@@ -12,6 +13,13 @@ namespace Gloss.Api.MergeRequests;
 public static class MergeRequestEndpoints
 {
     public static IEndpointRouteBuilder MapMergeRequestEndpoints(this IEndpointRouteBuilder app)
+    {
+        MapMrRoutes(app);
+        MapRepositoryRoutes(app);
+        return app;
+    }
+
+    private static void MapMrRoutes(IEndpointRouteBuilder app)
     {
         app.MapGet("/api/merge-requests", async (
             [FromServices] ListAllMergeRequestsHandler handler,
@@ -50,6 +58,19 @@ public static class MergeRequestEndpoints
             return result.ToOk(ctx);
         }).WithTags("MergeRequests");
 
+        app.MapDelete("/api/merge-requests/{mrId:guid}", async (
+            Guid mrId,
+            [FromServices] DeleteMergeRequestHandler handler,
+            HttpContext ctx,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(mrId, cancellationToken).ConfigureAwait(false);
+            return result.ToNoContent(ctx);
+        }).WithTags("MergeRequests");
+    }
+
+    private static void MapRepositoryRoutes(IEndpointRouteBuilder app)
+    {
         var repoGroup = app.MapGroup("/api/repositories/{repositoryId:guid}").WithTags("MergeRequests");
 
         repoGroup.MapGet("/merge-requests", async (
@@ -70,7 +91,5 @@ public static class MergeRequestEndpoints
             var result = await handler.HandleAsync(repositoryId, cancellationToken).ConfigureAwait(false);
             return result.ToOk(ctx);
         });
-
-        return app;
     }
 }
