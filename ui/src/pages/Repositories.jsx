@@ -7,6 +7,7 @@ export default function Repositories() {
   const [error, setError] = useState(null);
   const [cronEdits, setCronEdits] = useState({});
   const [saving, setSaving] = useState({});
+  const [deleting, setDeleting] = useState({});
 
   useEffect(() => {
     api.listRepositories()
@@ -29,6 +30,17 @@ export default function Repositories() {
       setError(err);
     } finally {
       setSaving(s => { const n = { ...s }; delete n[repo.id]; return n; });
+    }
+  }
+
+  async function deleteRepo(repo) {
+    setDeleting(d => ({ ...d, [repo.id]: true }));
+    try {
+      await api.deleteRepository(repo.id);
+      setRepos(rs => rs.filter(r => r.id !== repo.id));
+    } catch (err) {
+      setError(err);
+      setDeleting(d => { const n = { ...d }; delete n[repo.id]; return n; });
     }
   }
 
@@ -98,11 +110,16 @@ export default function Repositories() {
                     />
                   </td>
                   <td>
-                    {isCronDirty && (
-                      <button className="btn" onClick={() => saveCron(repo)} disabled={saving[repo.id]}>
-                        {saving[repo.id] ? 'Saving…' : 'Save'}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {isCronDirty && (
+                        <button className="btn btn-sm" onClick={() => saveCron(repo)} disabled={saving[repo.id] || deleting[repo.id]}>
+                          {saving[repo.id] ? 'Saving…' : 'Save'}
+                        </button>
+                      )}
+                      <button className="btn-ghost btn-danger btn-sm" onClick={() => deleteRepo(repo)} disabled={saving[repo.id] || deleting[repo.id]}>
+                        {deleting[repo.id] ? '…' : 'Delete'}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               );

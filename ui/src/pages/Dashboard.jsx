@@ -87,7 +87,7 @@ export default function Dashboard() {
             </div>
             <div className="mr-list">
               {grouped[state].map(mr => (
-                <MrCard key={mr.id} mr={mr} />
+                <MrCard key={mr.id} mr={mr} onDelete={id => setMrs(ms => ms.filter(m => m.id !== id))} />
               ))}
             </div>
           </section>
@@ -106,15 +106,33 @@ export default function Dashboard() {
   );
 }
 
-function MrCard({ mr }) {
+function MrCard({ mr, onDelete }) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete(e) {
+    e.preventDefault();
+    setDeleting(true);
+    try {
+      await api.deleteMr(mr.id);
+      onDelete(mr.id);
+    } catch {
+      setDeleting(false);
+    }
+  }
+
   return (
-    <Link to={`/mr/${mr.id}`} className="mr-card">
-      <div className="mr-card-title">{mr.title}</div>
-      <div className="mr-card-meta">
-        <span className="muted">{mr.projectPath}</span>
-        <span className="branch mono">{mr.sourceBranch} → {mr.targetBranch}</span>
-        <span className="muted">{mr.authorUsername}</span>
-      </div>
-    </Link>
+    <div className="mr-card">
+      <Link to={`/mr/${mr.id}`} className="mr-card-link">
+        <div className="mr-card-title">{mr.title}</div>
+        <div className="mr-card-meta">
+          <span className="muted">{mr.projectPath}</span>
+          <span className="branch mono">{mr.sourceBranch} → {mr.targetBranch}</span>
+          <span className="muted">{mr.authorUsername}</span>
+        </div>
+      </Link>
+      <button className="btn-ghost btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
+        {deleting ? '…' : 'Delete'}
+      </button>
+    </div>
   );
 }

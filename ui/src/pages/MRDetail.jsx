@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import DiffView from '../components/DiffView.jsx';
 
 export default function MRDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [mr, setMr] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
   const [selectedCommit, setSelectedCommit] = useState(null);
   const [commitsExpanded, setCommitsExpanded] = useState(true);
@@ -45,6 +47,18 @@ export default function MRDetail() {
       setError(err);
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.deleteMr(id);
+      navigate('/');
+    } catch (err) {
+      setError(err);
+      setDeleting(false);
     }
   }
 
@@ -88,12 +102,12 @@ export default function MRDetail() {
               <span className="reviewing-indicator">Review in progress…</span>
             )}
             {canReview && (
-              <button className="btn btn-secondary" onClick={handleReview} disabled={reviewing || publishing}>
+              <button className="btn btn-secondary" onClick={handleReview} disabled={reviewing || publishing || deleting}>
                 {reviewing ? 'Reviewing…' : mr.state === 'Ready' ? 'Re-review' : 'Trigger Review'}
               </button>
             )}
             {canPublish && (
-              <button className="btn btn-publish" onClick={handlePublish} disabled={publishing || reviewing}
+              <button className="btn btn-publish" onClick={handlePublish} disabled={publishing || reviewing || deleting}
                 title={!mr.hasShas ? 'Diff refs unavailable — comments will be posted as general notes' : undefined}>
                 {publishing ? 'Publishing…' : 'Publish to GitLab'}
               </button>
@@ -101,6 +115,9 @@ export default function MRDetail() {
             {mr.state === 'Published' && (
               <span className="published-indicator">Published to GitLab</span>
             )}
+            <button className="btn-ghost btn-danger btn-sm" onClick={handleDelete} disabled={deleting || reviewing || publishing}>
+              {deleting ? 'Deleting…' : 'Delete MR'}
+            </button>
           </div>
         </div>
 

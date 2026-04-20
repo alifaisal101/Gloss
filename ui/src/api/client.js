@@ -17,6 +17,7 @@ export const api = {
   getMr: (id) => request('GET', `/merge-requests/${id}`),
   reviewMr: (id) => request('POST', `/merge-requests/${id}/review`),
   publishMr: (id) => request('POST', `/merge-requests/${id}/publish`),
+  deleteMr: (id) => request('DELETE', `/merge-requests/${id}`),
   pollAll: () => request('POST', '/repositories/poll-all'),
 
   // Comments
@@ -31,6 +32,7 @@ export const api = {
   listRepositories: () => request('GET', '/repositories'),
   updateRepository: (id, fields) =>
     request('PATCH', `/repositories/${id}`, fields),
+  deleteRepository: (id) => request('DELETE', `/repositories/${id}`),
 
   // Config
   getConfig: () => request('GET', '/config'),
