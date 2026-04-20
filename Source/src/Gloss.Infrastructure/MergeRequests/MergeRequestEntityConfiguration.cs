@@ -13,6 +13,7 @@ internal sealed class MergeRequestEntityConfiguration : IEntityTypeConfiguration
         builder.HasKey(x => x.Id);
         builder.HasIndex(x => new { x.RepositoryId, x.ProviderIid }).IsUnique();
         builder.Property(x => x.State).HasConversion<int>();
+        builder.Property(x => x.ReviewJobId);
         builder.HasOne<Repository>().WithMany().HasForeignKey(x => x.RepositoryId).OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -56,6 +56,28 @@ public sealed class DeleteMergeRequestTests(GlossApiFactory factory) : IClassFix
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Delete_CancelsReviewJob_WhenAutoReviewEnabled()
+    {
+        const string jobId = "test-review-job-id";
+        factory.JobScheduler.Setup(x => x.EnqueueReview(It.IsAny<Guid>())).Returns(jobId);
+        var (_, mrId) = await SetupMrWithAutoReviewAsync();
+
+        await _client.DeleteAsync($"/api/merge-requests/{mrId}");
+
+        factory.JobScheduler.Verify(x => x.CancelReview(jobId), Times.Once());
+    }
+
+    [Fact]
+    public async Task Delete_DoesNotCancelReview_WhenNoReviewJobScheduled()
+    {
+        var mrId = await SetupPendingMrAsync();
+
+        await _client.DeleteAsync($"/api/merge-requests/{mrId}");
+
+        factory.JobScheduler.Verify(x => x.CancelReview(It.IsAny<string>()), Times.Never());
+    }
+
     private async Task<Guid> SetupPendingMrAsync()
     {
         var (_, mrId) = await SetupPendingMrWithRepoAsync();
@@ -67,6 +89,25 @@ public sealed class DeleteMergeRequestTests(GlossApiFactory factory) : IClassFix
         await SaveConfig(["group/project-a"]);
         var repos = await _client.GetFromJsonAsync<RepoSummary[]>("/api/repositories");
         var repoId = repos!.Single().Id;
+
+        await _client.PatchAsJsonAsync($"/api/repositories/{repoId}", new { autoReviewEnabled = false });
+
+        factory.GitClient
+            .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff --git a/src/Foo.cs", "base", "head", "start")]);
+        await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
+
+        var mrs = await _client.GetFromJsonAsync<MrSummary[]>($"/api/repositories/{repoId}/merge-requests");
+        return (repoId, mrs!.Single().Id);
+    }
+
+    private async Task<(Guid repoId, Guid mrId)> SetupMrWithAutoReviewAsync()
+    {
+        await SaveConfig(["group/project-a"]);
+        var repos = await _client.GetFromJsonAsync<RepoSummary[]>("/api/repositories");
+        var repoId = repos!.Single().Id;
+
+        await _client.PatchAsJsonAsync($"/api/repositories/{repoId}", new { autoReviewEnabled = true });
 
         factory.GitClient
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))

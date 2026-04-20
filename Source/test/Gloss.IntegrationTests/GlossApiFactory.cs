@@ -119,6 +119,7 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             .ReturnsAsync([]);
         GitClient.Setup(x => x.GetMrShasAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MrShasData("base-sha", "head-sha", "start-sha"));
+        JobScheduler.Setup(x => x.EnqueueReview(It.IsAny<Guid>())).Returns("test-job-id");
         RepoManager
             .Setup(r => r.EnsureReadyAsync(It.IsAny<Repository>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("/repos/test");

@@ -18,8 +18,11 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public string? HeadSha { get; private set; }
     public string? StartSha { get; private set; }
     public MergeRequestState State { get; private set; }
+    public string? ReviewJobId { get; private set; }
 
     private MergeRequest() : base(Guid.NewGuid()) { }
+
+    public void SetReviewJobId(string jobId) => ReviewJobId = jobId;
 
     public static MergeRequest Create(
         Guid repositoryId,

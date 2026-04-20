@@ -140,6 +140,9 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<Guid>("RepositoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ReviewJobId")
+                        .HasColumnType("text");
+
                     b.Property<int>("State")
                         .HasColumnType("integer");
 

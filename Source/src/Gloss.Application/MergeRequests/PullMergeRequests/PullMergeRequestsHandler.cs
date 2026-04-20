@@ -32,7 +32,7 @@ public sealed class PullMergeRequestsHandler(
 
         var existingMrs = await mergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         var existingByIid = existingMrs.ToDictionary(mr => mr.ProviderIid);
-        var newMrIds = new List<Guid>();
+        var newMrs = new List<MergeRequest>();
 
         foreach (var remote in remoteMrs)
         {
@@ -52,7 +52,7 @@ public sealed class PullMergeRequestsHandler(
                     remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff,
                     remote.BaseSha, remote.HeadSha, remote.StartSha);
                 domainContext.Save<MergeRequest, Guid>(mr);
-                newMrIds.Add(mr.Id);
+                newMrs.Add(mr);
             }
 
             await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -64,9 +64,12 @@ public sealed class PullMergeRequestsHandler(
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        if (repository.AutoReviewEnabled)
-            foreach (var mrId in newMrIds)
-                jobScheduler.EnqueueReview(mrId);
+        if (repository.AutoReviewEnabled && newMrs.Count > 0)
+        {
+            foreach (var newMr in newMrs)
+                newMr.SetReviewJobId(jobScheduler.EnqueueReview(newMr.Id));
+            await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         return Result.Success();
     }
