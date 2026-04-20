@@ -1,8 +1,10 @@
 using System.Net;
+using BuildingBlocks.Application.EventSourcing;
 using BuildingBlocks.Application.Persistence;
 using BuildingBlocks.Domain.Results;
 using Gloss.Application.MergeRequests;
 using Gloss.Domain.MergeRequests;
+using Gloss.Domain.MergeRequests.Events;
 using Gloss.Domain.Repositories;
 
 namespace Gloss.Application.Reviews.PublishMergeRequest;
@@ -12,13 +14,16 @@ public sealed class PublishMergeRequestHandler(
     IDraftCommentRepository draftCommentRepository,
     IRepositoryRepository repositoryRepository,
     IGitClient gitClient,
+    IEventStore eventStore,
     IDomainContext domainContext)
 {
     public async Task<VoidResult> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
     {
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
-        if (mr.State != MergeRequestState.Ready) return MergeRequestErrors.NotReady;
+
+        var markPublishedResult = mr.MarkPublished();
+        if (markPublishedResult.IsFailure) return markPublishedResult.Error;
 
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repo is null) return MergeRequestErrors.RepositoryNotFound;
@@ -40,8 +45,14 @@ public sealed class PublishMergeRequestHandler(
             return MergeRequestErrors.GitProviderUnauthorized;
         }
 
-        mr.MarkPublished();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var comment in comments.Where(c => c.State == DraftCommentState.Generated))
+            await eventStore.AppendAsync(
+                $"mr-{mergeRequestId}",
+                new CommentAccepted(mergeRequestId, comment.Id, comment.Body),
+                cancellationToken).ConfigureAwait(false);
+
         return Result.Success();
     }
 }

@@ -50,8 +50,8 @@ public sealed class CommentEventTests(GlossApiFactory factory) : IClassFixture<G
 
         var events = await QueryEventsAsync("CommentEdited");
         var payload = events.Single().Payload.RootElement;
-        payload.GetProperty("bodyBefore").GetString().Should().Be("Null check missing");
-        payload.GetProperty("bodyAfter").GetString().Should().Be("updated body");
+        payload.GetProperty("BodyBefore").GetString().Should().Be("Null check missing");
+        payload.GetProperty("BodyAfter").GetString().Should().Be("updated body");
     }
 
     [Fact]
