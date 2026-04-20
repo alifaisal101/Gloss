@@ -1,4 +1,6 @@
 using BuildingBlocks.Domain.Models;
+using BuildingBlocks.Domain.Results;
+using Gloss.Domain.MergeRequests.BusinessRules;
 
 namespace Gloss.Domain.MergeRequests;
 
@@ -15,7 +17,6 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public string? BaseSha { get; private set; }
     public string? HeadSha { get; private set; }
     public string? StartSha { get; private set; }
-
     public MergeRequestState State { get; private set; }
 
     private MergeRequest() : base(Guid.NewGuid()) { }
@@ -41,9 +42,32 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         return mr;
     }
 
-    public void MarkReviewing() => State = MergeRequestState.Reviewing;
+    public VoidResult MarkReviewing()
+    {
+        var shaRule = CheckRule(new MergeRequestHasHeadSha(HeadSha));
+        if (shaRule.IsFailure) return shaRule.Error;
+
+        var reviewingRule = CheckRule(new MergeRequestNotAlreadyReviewing(State));
+        if (reviewingRule.IsFailure) return reviewingRule.Error;
+
+        var diffRule = CheckRule(new MergeRequestDiffNotTooLarge(Diff));
+        if (diffRule.IsFailure) return diffRule.Error;
+
+        State = MergeRequestState.Reviewing;
+        return Result.Success();
+    }
+
     public void MarkReady() => State = MergeRequestState.Ready;
-    public void MarkPublished() => State = MergeRequestState.Published;
+
+    public VoidResult MarkPublished()
+    {
+        var readyRule = CheckRule(new MergeRequestIsReady(State));
+        if (readyRule.IsFailure) return readyRule.Error;
+
+        State = MergeRequestState.Published;
+        return Result.Success();
+    }
+
     public void ResetToPending() => State = MergeRequestState.Pending;
 
     public void Update(

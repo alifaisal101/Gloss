@@ -19,9 +19,11 @@ public sealed class AddDraftCommentHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
 
-        var comment = DraftComment.Create(mergeRequestId, filePath, line, body, reasoning, DraftCommentState.UserAdded);
-        domainContext.Save<DraftComment, Guid>(comment);
+        var commentResult = DraftComment.Create(mergeRequestId, filePath, line, body, reasoning, DraftCommentState.UserAdded);
+        if (commentResult.IsFailure) return commentResult.Error;
+
+        domainContext.Save<DraftComment, Guid>(commentResult.Value);
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
-        return DraftCommentReadModel.From(comment);
+        return DraftCommentReadModel.From(commentResult.Value);
     }
 }

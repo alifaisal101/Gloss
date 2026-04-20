@@ -19,9 +19,6 @@ public static class DraftCommentEndpoints
             HttpContext ctx,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Body))
-                return Results.BadRequest();
-
             var result = await handler.HandleAsync(
                 mrId, request.FilePath, request.Line, request.Body, request.Reasoning, cancellationToken)
                 .ConfigureAwait(false);

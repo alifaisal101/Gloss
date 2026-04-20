@@ -1,4 +1,6 @@
 using BuildingBlocks.Domain.Models;
+using BuildingBlocks.Domain.Results;
+using Gloss.Domain.MergeRequests.BusinessRules;
 
 namespace Gloss.Domain.MergeRequests;
 
@@ -13,25 +15,51 @@ public sealed class DraftComment : AggregateRoot<Guid>
 
     private DraftComment() : base(Guid.NewGuid()) { }
 
-    public static DraftComment Create(Guid mergeRequestId, string filePath, int line, string body, string? reasoning,
+    public static Result<DraftComment> Create(
+        Guid mergeRequestId,
+        string filePath,
+        int line,
+        string body,
+        string? reasoning,
         DraftCommentState state = DraftCommentState.Generated)
     {
-        var dc = new DraftComment();
-        dc.MergeRequestId = mergeRequestId;
-        dc.FilePath = filePath;
-        dc.Line = line;
-        dc.Body = body;
-        dc.Reasoning = reasoning;
-        dc.State = state;
+        var bodyRule = CheckRule(new DraftCommentBodyNotEmpty(body));
+        if (bodyRule.IsFailure) return bodyRule.Error;
+
+        var filePathRule = CheckRule(new DraftCommentFilePathNotEmpty(filePath));
+        if (filePathRule.IsFailure) return filePathRule.Error;
+
+        var lineRule = CheckRule(new DraftCommentLineValid(line));
+        if (lineRule.IsFailure) return lineRule.Error;
+
+        var dc = new DraftComment
+        {
+            MergeRequestId = mergeRequestId,
+            FilePath = filePath,
+            Line = line,
+            Body = body,
+            Reasoning = reasoning,
+            State = state,
+        };
         return dc;
     }
 
-    public void Update(string filePath, int line, string body, string? reasoning)
+    public VoidResult Update(string filePath, int line, string body, string? reasoning)
     {
+        var bodyRule = CheckRule(new DraftCommentBodyNotEmpty(body));
+        if (bodyRule.IsFailure) return bodyRule.Error;
+
+        var filePathRule = CheckRule(new DraftCommentFilePathNotEmpty(filePath));
+        if (filePathRule.IsFailure) return filePathRule.Error;
+
+        var lineRule = CheckRule(new DraftCommentLineValid(line));
+        if (lineRule.IsFailure) return lineRule.Error;
+
         FilePath = filePath;
         Line = line;
         Body = body;
         Reasoning = reasoning;
         State = DraftCommentState.Edited;
+        return Result.Success();
     }
 }

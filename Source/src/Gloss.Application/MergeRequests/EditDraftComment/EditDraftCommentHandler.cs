@@ -21,7 +21,9 @@ public sealed class EditDraftCommentHandler(
         if (comment is null || comment.MergeRequestId != mergeRequestId)
             return MergeRequestErrors.CommentNotFound;
 
-        comment.Update(filePath, line, body, reasoning);
+        var result = comment.Update(filePath, line, body, reasoning);
+        if (result.IsFailure) return result.Error;
+
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }

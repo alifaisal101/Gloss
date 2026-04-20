@@ -33,4 +33,13 @@ public static class MergeRequestErrors
 
     public static readonly DomainError CommentNotFound =
         new("DraftComment.NotFound", "Comment not found.");
+
+    public static readonly DomainError CommentBodyRequired =
+        new("DraftComment.BodyRequired", "Comment body cannot be empty.");
+
+    public static readonly DomainError CommentFilePathRequired =
+        new("DraftComment.FilePathRequired", "Comment file path cannot be empty.");
+
+    public static readonly DomainError CommentLineInvalid =
+        new("DraftComment.LineInvalid", "Comment line number must be greater than zero.");
 }

@@ -19,20 +19,17 @@ public sealed class ReviewMergeRequestHandler(
     {
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
-        if (mr.Diff.Length > 50_000) return MergeRequestErrors.DiffTooLarge;
-        if (mr.State == MergeRequestState.Reviewing) return MergeRequestErrors.AlreadyReviewing;
-        if (mr.HeadSha is null) return MergeRequestErrors.MissingShas;
-
         var repository = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repository is null) return MergeRequestErrors.RepositoryNotFound;
 
-        mr.MarkReviewing();
+        var markReviewingResult = mr.MarkReviewing();
+        if (markReviewingResult.IsFailure) return markReviewingResult.Error;
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         string localPath;
         try
         {
-            localPath = await repoManager.EnsureReadyAsync(repository, mr.HeadSha, cancellationToken).ConfigureAwait(false);
+            localPath = await repoManager.EnsureReadyAsync(repository, mr.HeadSha!, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -59,8 +56,11 @@ public sealed class ReviewMergeRequestHandler(
             domainContext.Remove<DraftComment, Guid>(c);
 
         foreach (var comment in comments)
-            domainContext.Save<DraftComment, Guid>(
-                DraftComment.Create(mergeRequestId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning));
+        {
+            var dc = DraftComment.Create(mergeRequestId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
+            if (dc.IsSuccess)
+                domainContext.Save<DraftComment, Guid>(dc.Value);
+        }
 
         mr.MarkReady();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
