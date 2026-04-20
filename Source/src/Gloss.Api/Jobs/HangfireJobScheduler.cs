@@ -17,4 +17,7 @@ internal sealed class HangfireJobScheduler() : IJobScheduler
     {
         BackgroundJob.Enqueue<ReviewMergeRequestJob>(job => job.ExecuteAsync(mergeRequestId, CancellationToken.None));
     }
+
+    public void EnqueueProjectionUpdate()
+        => throw new NotSupportedException();
 }

@@ -1,5 +1,7 @@
+using BuildingBlocks.Application.EventSourcing;
 using Gloss.Application.Jobs;
 using Gloss.Application.MergeRequests;
+using Gloss.Application.Projection;
 using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
 using Gloss.Domain.Repositories;
@@ -34,6 +36,7 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public Mock<IReviewProvider> ReviewProvider { get; } = new();
     public Mock<IJobScheduler> JobScheduler { get; } = new();
     public Mock<IRepoManager> RepoManager { get; } = new();
+    public Mock<IProjectionEngine> ProjectionEngine { get; } = new();
     internal Mock<IClaudeApiClient> ClaudeApiClient { get; } = new();
     internal Mock<IReviewFileSystem> ReviewFileSystem { get; } = new();
 
@@ -62,6 +65,7 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddSingleton(GitClient.Object);
             services.AddSingleton(JobScheduler.Object);
             services.AddSingleton(RepoManager.Object);
+            services.AddSingleton(ProjectionEngine.Object);
             if (UseRealReviewProvider)
             {
                 services.AddSingleton(ClaudeApiClient.Object);
@@ -108,6 +112,7 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         ReviewProvider.Reset();
         JobScheduler.Reset();
         RepoManager.Reset();
+        ProjectionEngine.Reset();
         ClaudeApiClient.Reset();
         ReviewFileSystem.Reset();
         GitClient.Setup(x => x.GetCommitsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -117,6 +122,9 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         RepoManager
             .Setup(r => r.EnsureReadyAsync(It.IsAny<Repository>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("/repos/test");
+        ProjectionEngine
+            .Setup(e => e.BuildUpdatedProjectionAsync(It.IsAny<string>(), It.IsAny<IReadOnlyList<StoredEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("generated projection");
 
         await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
