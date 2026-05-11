@@ -39,6 +39,8 @@ internal sealed class RepoManager(
 
     private static void Clone(string cloneUrl, string localPath, string token)
     {
+        if (Directory.Exists(localPath))
+            Directory.Delete(localPath, recursive: true);
         Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
         var options = new Git.CloneOptions
         {
