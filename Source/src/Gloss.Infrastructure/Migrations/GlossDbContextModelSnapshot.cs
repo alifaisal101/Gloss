@@ -134,8 +134,9 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<string>("HeadSha")
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("boolean");
+                    b.Property<string>("Approval")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("PlatformStatus")
                         .IsRequired()

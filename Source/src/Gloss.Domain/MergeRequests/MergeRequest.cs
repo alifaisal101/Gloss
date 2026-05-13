@@ -20,7 +20,7 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public MergeRequestStatus Status { get; private set; } = null!;
     public PlatformMrStatus PlatformStatus { get; private set; } = null!;
     public string? ReviewJobId { get; private set; }
-    public bool IsApproved { get; private set; }
+    public ApprovalStatus Approval { get; private set; } = null!;
 
     private MergeRequest() : base(Guid.NewGuid()) { }
 
@@ -44,6 +44,7 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         mr.ProviderIid = providerIid;
         mr.Status = new MergeRequestStatus.Pending(DateTimeOffset.UtcNow);
         mr.PlatformStatus = new PlatformMrStatus.Open();
+        mr.Approval = new ApprovalStatus.NotApproved();
         mr.Apply(title, description, sourceBranch, targetBranch, authorUsername, diff, baseSha, headSha, startSha);
         return mr;
     }
@@ -90,7 +91,7 @@ public sealed class MergeRequest : AggregateRoot<Guid>
 
     public void UpdatePlatformStatus(PlatformMrStatus status) => PlatformStatus = status;
 
-    public void SetApproved(bool isApproved) => IsApproved = isApproved;
+    public void UpdateApproval(ApprovalStatus approval) => Approval = approval;
 
     public void Update(
         string title,

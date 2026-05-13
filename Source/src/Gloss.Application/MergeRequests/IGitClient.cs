@@ -12,6 +12,8 @@ public interface IGitClient
 
     Task<bool> IsMergeRequestApprovedAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
 
+    Task<ApprovalStatusData> GetApprovalStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<PlatformCommentData>> GetMrDiscussionsAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
 
     Task PublishCommentAsync(

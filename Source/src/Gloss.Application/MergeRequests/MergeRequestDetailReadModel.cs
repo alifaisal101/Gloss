@@ -16,6 +16,8 @@ public sealed record MergeRequestDetailReadModel(
     string Diff,
     bool HasShas,
     bool IsApproved,
+    string? ApprovedByUsername,
+    DateTimeOffset? ApprovedAt,
     IReadOnlyList<DraftCommentReadModel> Comments,
     IReadOnlyList<MrCommitReadModel> Commits,
     IReadOnlyList<PlatformCommentReadModel> PlatformComments)
@@ -40,6 +42,7 @@ public sealed record MergeRequestDetailReadModel(
             _ => (null, null)
         };
 
+        var approved = mr.Approval as ApprovalStatus.Approved;
         return new(
             mr.Id,
             mr.Title,
@@ -52,7 +55,9 @@ public sealed record MergeRequestDetailReadModel(
             mr.TargetBranch,
             mr.Diff,
             mr.BaseSha is not null && mr.HeadSha is not null && mr.StartSha is not null,
-            mr.IsApproved,
+            approved is not null,
+            approved?.ByUsername,
+            approved?.ApprovedAt,
             comments.Select(DraftCommentReadModel.From).ToList(),
             commits.Select(MrCommitReadModel.From).ToList(),
             platformComments);

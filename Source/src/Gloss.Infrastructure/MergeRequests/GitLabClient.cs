@@ -164,6 +164,9 @@ internal sealed class GitLabClient(
         };
     }
 
+    public Task<ApprovalStatusData> GetApprovalStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
     public async Task<bool> IsMergeRequestApprovedAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
     {
         var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);

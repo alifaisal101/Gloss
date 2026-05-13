@@ -27,7 +27,11 @@ internal sealed class MergeRequestEntityConfiguration : IEntityTypeConfiguration
                 v => JsonSerializer.Deserialize<PlatformMrStatus>(v, (JsonSerializerOptions?)null)!);
 
         builder.Property(x => x.ReviewJobId);
-        builder.Property(x => x.IsApproved);
+        builder.Property(x => x.Approval)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<ApprovalStatus>(v, (JsonSerializerOptions?)null)!);
         builder.HasOne<Repository>().WithMany().HasForeignKey(x => x.RepositoryId).OnDelete(DeleteBehavior.Cascade);
     }
 }

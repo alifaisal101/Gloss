@@ -80,7 +80,7 @@ public sealed class PullMergeRequestsHandler(
         }
 
         var isApproved = await gitClient.IsMergeRequestApprovedAsync(repository.ProjectPath, remote.Iid, cancellationToken).ConfigureAwait(false);
-        mr.SetApproved(isApproved);
+        mr.UpdateApproval(isApproved ? new ApprovalStatus.Approved(null, null) : new ApprovalStatus.NotApproved());
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 

@@ -14,12 +14,15 @@ public sealed record MergeRequestReadModel(
     string State,
     string PlatformStatus,
     string ProjectPath,
-    bool IsApproved)
+    bool IsApproved,
+    string? ApprovedByUsername,
+    DateTimeOffset? ApprovedAt)
 {
     public static MergeRequestReadModel From(MergeRequest mr, Repository repo)
     {
         ArgumentNullException.ThrowIfNull(mr);
         ArgumentNullException.ThrowIfNull(repo);
+        var approved = mr.Approval as ApprovalStatus.Approved;
         return new(
             mr.Id,
             mr.RepositoryId,
@@ -31,6 +34,8 @@ public sealed record MergeRequestReadModel(
             mr.Status.GetType().Name,
             mr.PlatformStatus.GetType().Name,
             repo.ProjectPath,
-            mr.IsApproved);
+            approved is not null,
+            approved?.ByUsername,
+            approved?.ApprovedAt);
     }
 }
