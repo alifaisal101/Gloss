@@ -30,7 +30,7 @@ public sealed class AgenticLoopTests(AgenticGlossApiFactory factory) : IClassFix
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
         var mr = await _client.GetFromJsonAsync<MrDetailResponse>($"/api/merge-requests/{mrId}");
-        mr!.State.Should().Be("Ready");
+        mr!.State.Should().Be("Seen");
         mr.Comments.Should().ContainSingle(c => c.FilePath == "src/Foo.cs" && c.LineNumber == 10 && c.Body == "Null check missing");
     }
 
@@ -61,7 +61,7 @@ public sealed class AgenticLoopTests(AgenticGlossApiFactory factory) : IClassFix
 
         factory.ReviewFileSystem.Verify(fs => fs.ReadFile("/repos/test", "src/Foo.cs"), Times.Once());
         var mr = await _client.GetFromJsonAsync<MrDetailResponse>($"/api/merge-requests/{mrId}");
-        mr!.State.Should().Be("Ready");
+        mr!.State.Should().Be("Seen");
         mr.Comments.Should().ContainSingle(c => c.FilePath == "src/Foo.cs");
     }
 
@@ -119,7 +119,7 @@ public sealed class AgenticLoopTests(AgenticGlossApiFactory factory) : IClassFix
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
         var mr = await _client.GetFromJsonAsync<MrDetailResponse>($"/api/merge-requests/{mrId}");
-        mr!.State.Should().Be("Ready");
+        mr!.State.Should().Be("Seen");
         mr.Comments.Should().BeEmpty();
     }
 

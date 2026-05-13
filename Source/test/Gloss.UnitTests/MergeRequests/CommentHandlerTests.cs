@@ -44,7 +44,7 @@ public sealed class CommentHandlerTests
     {
         var commentId = Guid.NewGuid();
         _commentRepo.Setup(r => r.GetByIdAsync(commentId, It.IsAny<CancellationToken>())).ReturnsAsync((DraftComment?)null);
-        var handler = new EditDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new EditDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         await handler.HandleAsync(Guid.NewGuid(), commentId, "src/Foo.cs", 1, "body", null, CancellationToken.None);
 
@@ -55,7 +55,7 @@ public sealed class CommentHandlerTests
     public async Task EditComment_WhenCommentNotFound_ReturnsCommentNotFound()
     {
         _commentRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((DraftComment?)null);
-        var handler = new EditDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new EditDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         var result = await handler.HandleAsync(Guid.NewGuid(), Guid.NewGuid(), "src/Foo.cs", 1, "body", null, CancellationToken.None);
 
@@ -68,7 +68,7 @@ public sealed class CommentHandlerTests
     {
         var comment = DraftComment.Create(Guid.NewGuid(), "src/Foo.cs", 1, "body", null).Value;
         _commentRepo.Setup(r => r.GetByIdAsync(comment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(comment);
-        var handler = new EditDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new EditDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         var result = await handler.HandleAsync(Guid.NewGuid(), comment.Id, "src/Foo.cs", 1, "updated", null, CancellationToken.None);
 
@@ -81,7 +81,7 @@ public sealed class CommentHandlerTests
     {
         var commentId = Guid.NewGuid();
         _commentRepo.Setup(r => r.GetByIdAsync(commentId, It.IsAny<CancellationToken>())).ReturnsAsync((DraftComment?)null);
-        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         await handler.HandleAsync(Guid.NewGuid(), commentId, CancellationToken.None);
 
@@ -92,7 +92,7 @@ public sealed class CommentHandlerTests
     public async Task DeleteComment_WhenCommentNotFound_ReturnsCommentNotFound()
     {
         _commentRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((DraftComment?)null);
-        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         var result = await handler.HandleAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
 
@@ -105,7 +105,7 @@ public sealed class CommentHandlerTests
     {
         var comment = DraftComment.Create(Guid.NewGuid(), "src/Foo.cs", 1, "body", null).Value;
         _commentRepo.Setup(r => r.GetByIdAsync(comment.Id, It.IsAny<CancellationToken>())).ReturnsAsync(comment);
-        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _domainContext.Object, _eventStore.Object);
+        var handler = new DeleteDraftCommentHandler(_commentRepo.Object, _mrRepo.Object, _domainContext.Object, _eventStore.Object);
 
         var result = await handler.HandleAsync(Guid.NewGuid(), comment.Id, CancellationToken.None);
 

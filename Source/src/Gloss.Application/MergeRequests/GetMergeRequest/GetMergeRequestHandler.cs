@@ -1,3 +1,4 @@
+using BuildingBlocks.Application.Persistence;
 using Gloss.Domain.MergeRequests;
 using Gloss.Domain.Repositories;
 
@@ -8,7 +9,8 @@ public sealed class GetMergeRequestHandler(
     IDraftCommentRepository draftCommentRepository,
     IRepositoryRepository repositoryRepository,
     IMrCommitRepository commitRepository,
-    IGitClient gitClient)
+    IGitClient gitClient,
+    IDomainContext domainContext)
 {
     public async Task<MergeRequestDetailReadModel?> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
     {
@@ -18,9 +20,11 @@ public sealed class GetMergeRequestHandler(
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repo is null) return null;
 
+        mr.MarkSeen();
+        await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+
         var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         var commits = await commitRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
-
         var rawDiscussions = await gitClient.GetMrDiscussionsAsync(repo.ProjectPath, mr.ProviderIid, cancellationToken).ConfigureAwait(false);
         var platformComments = rawDiscussions.Select(PlatformCommentReadModel.From).ToList();
 

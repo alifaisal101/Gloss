@@ -8,6 +8,7 @@ namespace Gloss.Application.MergeRequests.EditDraftComment;
 
 public sealed class EditDraftCommentHandler(
     IDraftCommentRepository draftCommentRepository,
+    IMergeRequestRepository mergeRequestRepository,
     IDomainContext domainContext,
     IEventStore eventStore)
 {
@@ -24,11 +25,15 @@ public sealed class EditDraftCommentHandler(
         if (comment is null || comment.MergeRequestId != mergeRequestId)
             return MergeRequestErrors.CommentNotFound;
 
+        var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        if (mr is null) return MergeRequestErrors.NotFound;
+
         var bodyBefore = comment.Body;
 
         var result = comment.Update(filePath, line, body, reasoning);
         if (result.IsFailure) return result.Error;
 
+        mr.MarkStaged();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         await eventStore.AppendAsync(

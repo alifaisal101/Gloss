@@ -76,6 +76,18 @@ public sealed class MergeRequest : AggregateRoot<Guid>
 
     public void ResetToPending() => Status = new MergeRequestStatus.Pending(DateTimeOffset.UtcNow);
 
+    public void MarkSeen(Guid? byUserId = null)
+    {
+        if (Status is MergeRequestStatus.Ready)
+            Status = new MergeRequestStatus.Seen(DateTimeOffset.UtcNow, byUserId);
+    }
+
+    public void MarkStaged(Guid? byUserId = null)
+    {
+        if (Status is MergeRequestStatus.Pending or MergeRequestStatus.Ready or MergeRequestStatus.Seen)
+            Status = new MergeRequestStatus.Staged(DateTimeOffset.UtcNow, byUserId);
+    }
+
     public void UpdatePlatformStatus(PlatformMrStatus status) => PlatformStatus = status;
 
     public void SetApproved(bool isApproved) => IsApproved = isApproved;

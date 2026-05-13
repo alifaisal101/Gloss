@@ -41,9 +41,11 @@ public sealed class ReviewTests(GlossApiFactory factory) : IClassFixture<GlossAp
 
         await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
 
-        var mr = await _client.GetFromJsonAsync<MergeRequestDetailResponse>($"/api/merge-requests/{mrId}");
-        mr!.State.Should().Be("Ready");
+        var mrs = await _client.GetFromJsonAsync<MrStateResponse[]>("/api/merge-requests");
+        mrs!.Single(m => m.Id == mrId).State.Should().Be("Ready");
     }
+
+    private record MrStateResponse(Guid Id, string State);
 
     [Fact]
     public async Task Review_CreatesDraftCommentsFromLlmResponse()

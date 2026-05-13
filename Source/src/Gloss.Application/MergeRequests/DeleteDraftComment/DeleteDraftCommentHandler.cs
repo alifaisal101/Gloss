@@ -8,6 +8,7 @@ namespace Gloss.Application.MergeRequests.DeleteDraftComment;
 
 public sealed class DeleteDraftCommentHandler(
     IDraftCommentRepository draftCommentRepository,
+    IMergeRequestRepository mergeRequestRepository,
     IDomainContext domainContext,
     IEventStore eventStore)
 {
@@ -20,8 +21,12 @@ public sealed class DeleteDraftCommentHandler(
         if (comment is null || comment.MergeRequestId != mergeRequestId)
             return MergeRequestErrors.CommentNotFound;
 
+        var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        if (mr is null) return MergeRequestErrors.NotFound;
+
         var body = comment.Body;
 
+        mr.MarkStaged();
         domainContext.Remove<DraftComment, Guid>(comment);
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
