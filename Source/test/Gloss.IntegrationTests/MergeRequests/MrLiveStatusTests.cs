@@ -93,8 +93,8 @@ public sealed class MrLiveStatusTests(GlossApiFactory factory) : IClassFixture<G
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         factory.GitClient
-            .Setup(c => c.IsMergeRequestApprovedAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(c => c.GetApprovalStatusAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApprovalStatusData(true, "approver", null));
 
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
@@ -110,8 +110,8 @@ public sealed class MrLiveStatusTests(GlossApiFactory factory) : IClassFixture<G
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         factory.GitClient
-            .Setup(c => c.IsMergeRequestApprovedAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .Setup(c => c.GetApprovalStatusAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApprovalStatusData(false, null, null));
 
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
@@ -127,13 +127,13 @@ public sealed class MrLiveStatusTests(GlossApiFactory factory) : IClassFixture<G
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         factory.GitClient
-            .Setup(c => c.IsMergeRequestApprovedAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .Setup(c => c.GetApprovalStatusAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApprovalStatusData(false, null, null));
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         factory.GitClient
-            .Setup(c => c.IsMergeRequestApprovedAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(c => c.GetApprovalStatusAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApprovalStatusData(true, "approver", null));
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         var mrs = await _client.GetFromJsonAsync<MrStatusResponse[]>($"/api/repositories/{repoId}/merge-requests");
@@ -200,8 +200,8 @@ public sealed class MrLiveStatusTests(GlossApiFactory factory) : IClassFixture<G
             .Setup(c => c.GetOpenMergeRequestsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new(1, "Fix bug", null, "fix/bug", "main", "alice", "diff", "base", "head", "start")]);
         factory.GitClient
-            .Setup(c => c.IsMergeRequestApprovedAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(c => c.GetApprovalStatusAsync("group/project-a", 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApprovalStatusData(true, "approver", null));
         await _client.PostAsync($"/api/repositories/{repoId}/pull-reviews", null);
 
         var mrs = await _client.GetFromJsonAsync<MrStatusResponse[]>($"/api/repositories/{repoId}/merge-requests");

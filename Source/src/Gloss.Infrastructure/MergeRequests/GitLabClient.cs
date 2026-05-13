@@ -164,13 +164,10 @@ internal sealed class GitLabClient(
         };
     }
 
-    public Task<ApprovalStatusData> GetApprovalStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
-
-    public async Task<bool> IsMergeRequestApprovedAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    public async Task<ApprovalStatusData> GetApprovalStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
     {
         var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
-        if (config is null) return false;
+        if (config is null) return new(false, null, null);
 
         var token = encryptor.Decrypt(config.GitToken).Value;
         var encoded = Uri.EscapeDataString(projectPath);
@@ -180,7 +177,10 @@ internal sealed class GitLabClient(
             $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/approvals",
             token, cancellationToken).ConfigureAwait(false);
 
-        return approvals?.Approved ?? false;
+        if (approvals is null || !approvals.Approved) return new(false, null, null);
+
+        var approvedByUsername = approvals.ApprovedBy is { Count: > 0 } list ? list[0].User?.Username : null;
+        return new(true, approvedByUsername, null);
     }
 
     public async Task<IReadOnlyList<PlatformCommentData>> GetMrDiscussionsAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
@@ -269,7 +269,12 @@ internal sealed class GitLabClient(
 
     private sealed record GitLabUserDto(string Username);
 
-    private sealed record GitLabApprovalDto([property: JsonPropertyName("approved")] bool Approved);
+    private sealed record GitLabApprovalDto(
+        [property: JsonPropertyName("approved")] bool Approved,
+        [property: JsonPropertyName("approved_by")] IReadOnlyList<GitLabApprovalByDto>? ApprovedBy);
+
+    private sealed record GitLabApprovalByDto(
+        [property: JsonPropertyName("user")] GitLabUserDto? User);
 
     private sealed record GitLabNoteDto(
         int Id,

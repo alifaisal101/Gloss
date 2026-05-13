@@ -121,8 +121,6 @@ public class GlossApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             .ReturnsAsync(new MrShasData("base-sha", "head-sha", "start-sha"));
         GitClient.Setup(x => x.GetMergeRequestStatusAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PlatformMrStatusData("Open", null, null));
-        GitClient.Setup(x => x.IsMergeRequestApprovedAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
         GitClient.Setup(x => x.GetApprovalStatusAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ApprovalStatusData(false, null, null));
         GitClient.Setup(x => x.GetMrDiscussionsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))

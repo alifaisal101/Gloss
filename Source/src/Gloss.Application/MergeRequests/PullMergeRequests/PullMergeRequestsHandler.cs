@@ -79,8 +79,10 @@ public sealed class PullMergeRequestsHandler(
             isNew = true;
         }
 
-        var isApproved = await gitClient.IsMergeRequestApprovedAsync(repository.ProjectPath, remote.Iid, cancellationToken).ConfigureAwait(false);
-        mr.UpdateApproval(isApproved ? new ApprovalStatus.Approved(null, null) : new ApprovalStatus.NotApproved());
+        var approvalData = await gitClient.GetApprovalStatusAsync(repository.ProjectPath, remote.Iid, cancellationToken).ConfigureAwait(false);
+        mr.UpdateApproval(approvalData.IsApproved
+            ? new ApprovalStatus.Approved(approvalData.ApprovedByUsername, approvalData.ApprovedAt)
+            : new ApprovalStatus.NotApproved());
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
