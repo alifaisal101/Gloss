@@ -9,7 +9,7 @@ public sealed class MergeRequestTests
     {
         var mr = BuildMr();
 
-        mr.State.Should().Be(MergeRequestState.Pending);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
     }
 
     [Fact]
@@ -55,59 +55,59 @@ public sealed class MergeRequestTests
     }
 
     [Fact]
-    public void MarkReviewing_TransitionsToReviewingState()
+    public void BeginReview_TransitionsToReviewingState()
     {
         var mr = BuildMr();
 
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        mr.State.Should().Be(MergeRequestState.Reviewing);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
     }
 
     [Fact]
-    public void MarkReady_TransitionsToReadyState()
+    public void CompleteReview_TransitionsToReadyState()
     {
         var mr = BuildMr();
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        mr.MarkReady();
+        mr.CompleteReview();
 
-        mr.State.Should().Be(MergeRequestState.Ready);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Ready>();
     }
 
     [Fact]
-    public void MarkPublished_TransitionsToPublishedState()
+    public void Publish_TransitionsToPublishedState()
     {
         var mr = BuildMr();
-        mr.MarkReviewing();
-        mr.MarkReady();
+        mr.BeginReview();
+        mr.CompleteReview();
 
-        mr.MarkPublished();
+        mr.Publish();
 
-        mr.State.Should().Be(MergeRequestState.Published);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Published>();
     }
 
     [Fact]
     public void ResetToPending_FromReviewing_ReturnsToPendingState()
     {
         var mr = BuildMr();
-        mr.MarkReviewing();
+        mr.BeginReview();
 
         mr.ResetToPending();
 
-        mr.State.Should().Be(MergeRequestState.Pending);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
     }
 
     [Fact]
     public void ResetToPending_FromReady_ReturnsToPendingState()
     {
         var mr = BuildMr();
-        mr.MarkReviewing();
-        mr.MarkReady();
+        mr.BeginReview();
+        mr.CompleteReview();
 
         mr.ResetToPending();
 
-        mr.State.Should().Be(MergeRequestState.Pending);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
     }
 
     [Fact]
@@ -115,13 +115,13 @@ public sealed class MergeRequestTests
     {
         var mr = BuildMr();
 
-        mr.State.Should().Be(MergeRequestState.Pending);
-        mr.MarkReviewing();
-        mr.State.Should().Be(MergeRequestState.Reviewing);
-        mr.MarkReady();
-        mr.State.Should().Be(MergeRequestState.Ready);
-        mr.MarkPublished();
-        mr.State.Should().Be(MergeRequestState.Published);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
+        mr.BeginReview();
+        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
+        mr.CompleteReview();
+        mr.Status.Should().BeOfType<MergeRequestStatus.Ready>();
+        mr.Publish();
+        mr.Status.Should().BeOfType<MergeRequestStatus.Published>();
     }
 
     [Fact]
@@ -148,12 +148,12 @@ public sealed class MergeRequestTests
     {
         var repoId = Guid.NewGuid();
         var mr = MergeRequest.Create(repoId, 1, "Title", null, "src", "main", "alice", "diff", null, "head1", null);
-        mr.MarkReviewing();
+        mr.BeginReview();
 
         mr.Update("New title", null, "src", "main", "alice", "diff", null, null, null);
 
         mr.RepositoryId.Should().Be(repoId);
-        mr.State.Should().Be(MergeRequestState.Reviewing);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
     }
 
     [Fact]

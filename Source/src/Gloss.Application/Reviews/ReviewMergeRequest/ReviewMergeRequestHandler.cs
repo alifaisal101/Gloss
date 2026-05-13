@@ -24,7 +24,7 @@ public sealed class ReviewMergeRequestHandler(
         var repository = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repository is null) return MergeRequestErrors.RepositoryNotFound;
 
-        var markReviewingResult = mr.MarkReviewing();
+        var markReviewingResult = mr.BeginReview();
         if (markReviewingResult.IsFailure) return markReviewingResult.Error;
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -65,7 +65,7 @@ public sealed class ReviewMergeRequestHandler(
                 domainContext.Save<DraftComment, Guid>(dc.Value);
         }
 
-        mr.MarkReady();
+        mr.CompleteReview();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }

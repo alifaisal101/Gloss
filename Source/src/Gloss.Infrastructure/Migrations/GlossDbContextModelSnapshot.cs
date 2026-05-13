@@ -134,6 +134,13 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<string>("HeadSha")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PlatformStatus")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<int>("ProviderIid")
                         .HasColumnType("integer");
 
@@ -143,15 +150,16 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<string>("ReviewJobId")
                         .HasColumnType("text");
 
-                    b.Property<int>("State")
-                        .HasColumnType("integer");
-
                     b.Property<string>("SourceBranch")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("StartSha")
                         .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("TargetBranch")
                         .IsRequired()

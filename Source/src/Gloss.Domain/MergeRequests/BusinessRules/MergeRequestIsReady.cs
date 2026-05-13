@@ -3,8 +3,10 @@ using BuildingBlocks.Domain.Errors;
 
 namespace Gloss.Domain.MergeRequests.BusinessRules;
 
-public sealed class MergeRequestIsReady(MergeRequestState state) : IBusinessRule
+public sealed class MergeRequestIsReady(MergeRequestStatus status) : IBusinessRule
 {
     public DomainError Check() =>
-        state != MergeRequestState.Ready ? MergeRequestErrors.NotReady : DomainError.None;
+        status is not (MergeRequestStatus.Ready or MergeRequestStatus.Seen or MergeRequestStatus.Staged)
+            ? MergeRequestErrors.NotReady
+            : DomainError.None;
 }

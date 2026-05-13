@@ -141,6 +141,71 @@ internal sealed class GitLabClient(
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<PlatformMrStatusData> GetMergeRequestStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return new("Open", null, null);
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var mr = await SendAsync<GitLabMrDto>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}",
+            token, cancellationToken).ConfigureAwait(false);
+
+        if (mr is null) return new("Open", null, null);
+
+        return mr.State switch
+        {
+            "closed" => new("Closed", mr.ClosedAt, mr.ClosedBy?.Username),
+            "merged" => new("Merged", mr.MergedAt, mr.MergedBy?.Username),
+            _ => new("Open", null, null)
+        };
+    }
+
+    public async Task<bool> IsMergeRequestApprovedAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return false;
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var approvals = await SendAsync<GitLabApprovalDto>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/approvals",
+            token, cancellationToken).ConfigureAwait(false);
+
+        return approvals?.Approved ?? false;
+    }
+
+    public async Task<IReadOnlyList<PlatformCommentData>> GetMrDiscussionsAsync(string projectPath, int mrIid, CancellationToken cancellationToken)
+    {
+        var config = await configRepository.FindAsync(cancellationToken).ConfigureAwait(false);
+        if (config is null) return [];
+
+        var token = encryptor.Decrypt(config.GitToken).Value;
+        var encoded = Uri.EscapeDataString(projectPath);
+        var baseUrl = config.GitBaseUrl.AbsoluteUri.TrimEnd('/');
+
+        var notes = await SendAsync<GitLabNoteDto[]>(
+            $"{baseUrl}/api/v4/projects/{encoded}/merge_requests/{mrIid}/notes?sort=asc",
+            token, cancellationToken).ConfigureAwait(false);
+
+        if (notes is null) return [];
+
+        return notes
+            .Where(n => !n.System)
+            .Select(n => new PlatformCommentData(
+                n.Author.Username,
+                n.Body,
+                n.Position?.NewPath,
+                n.Position?.NewLine,
+                n.CreatedAt))
+            .ToList();
+    }
+
     public async Task PublishCommentAsync(
         string projectPath,
         int mrIid,
@@ -190,9 +255,30 @@ internal sealed class GitLabClient(
         [property: JsonPropertyName("source_branch")] string SourceBranch,
         [property: JsonPropertyName("target_branch")] string TargetBranch,
         GitLabAuthorDto? Author,
-        [property: JsonPropertyName("diff_refs")] GitLabDiffRefsDto? DiffRefs);
+        [property: JsonPropertyName("diff_refs")] GitLabDiffRefsDto? DiffRefs,
+        [property: JsonPropertyName("state")] string State,
+        [property: JsonPropertyName("closed_at")] DateTimeOffset? ClosedAt,
+        [property: JsonPropertyName("merged_at")] DateTimeOffset? MergedAt,
+        [property: JsonPropertyName("closed_by")] GitLabUserDto? ClosedBy,
+        [property: JsonPropertyName("merged_by")] GitLabUserDto? MergedBy);
 
     private sealed record GitLabAuthorDto(string Username);
+
+    private sealed record GitLabUserDto(string Username);
+
+    private sealed record GitLabApprovalDto([property: JsonPropertyName("approved")] bool Approved);
+
+    private sealed record GitLabNoteDto(
+        int Id,
+        string Body,
+        [property: JsonPropertyName("author")] GitLabAuthorDto Author,
+        [property: JsonPropertyName("system")] bool System,
+        [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
+        [property: JsonPropertyName("position")] GitLabNotePositionDto? Position);
+
+    private sealed record GitLabNotePositionDto(
+        [property: JsonPropertyName("new_path")] string? NewPath,
+        [property: JsonPropertyName("new_line")] int? NewLine);
 
     private sealed record GitLabDiffRefsDto(
         [property: JsonPropertyName("base_sha")] string BaseSha,

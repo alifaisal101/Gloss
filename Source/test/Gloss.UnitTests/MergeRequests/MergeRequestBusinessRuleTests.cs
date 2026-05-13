@@ -6,114 +6,114 @@ namespace Gloss.UnitTests.MergeRequests;
 public sealed class MergeRequestBusinessRuleTests
 {
     [Fact]
-    public void MarkReviewing_WhenPendingWithValidDiffAndHeadSha_Succeeds()
+    public void BeginReview_WhenPendingWithValidDiffAndHeadSha_Succeeds()
     {
         var mr = BuildMr(headSha: "abc123", diff: "small diff");
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.IsSuccess.Should().BeTrue();
-        mr.State.Should().Be(MergeRequestState.Reviewing);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
     }
 
     [Fact]
-    public void MarkReviewing_WhenAlreadyReviewing_ReturnsAlreadyReviewingError()
+    public void BeginReview_WhenAlreadyReviewing_ReturnsAlreadyReviewingError()
     {
         var mr = BuildMr(headSha: "abc123", diff: "small diff");
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(MergeRequestErrors.AlreadyReviewing);
     }
 
     [Fact]
-    public void MarkReviewing_WhenAlreadyReviewing_DoesNotChangeState()
+    public void BeginReview_WhenAlreadyReviewing_DoesNotChangeState()
     {
         var mr = BuildMr(headSha: "abc123", diff: "small diff");
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        mr.State.Should().Be(MergeRequestState.Reviewing);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
     }
 
     [Fact]
-    public void MarkReviewing_WhenDiffExceedsLimit_ReturnsDiffTooLargeError()
+    public void BeginReview_WhenDiffExceedsLimit_ReturnsDiffTooLargeError()
     {
         var mr = BuildMr(headSha: "abc123", diff: new string('+', 50_001));
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(MergeRequestErrors.DiffTooLarge);
     }
 
     [Fact]
-    public void MarkReviewing_WhenDiffIsExactlyAtLimit_Succeeds()
+    public void BeginReview_WhenDiffIsExactlyAtLimit_Succeeds()
     {
         var mr = BuildMr(headSha: "abc123", diff: new string('+', 50_000));
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public void MarkReviewing_WhenHeadShaIsMissing_ReturnsMissingShasError()
+    public void BeginReview_WhenHeadShaIsMissing_ReturnsMissingShasError()
     {
         var mr = BuildMr(headSha: null, diff: "small diff");
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(MergeRequestErrors.MissingShas);
     }
 
     [Fact]
-    public void MarkReviewing_WhenDiffTooLargeAndHeadShaMissing_ReturnsMissingShasFirst()
+    public void BeginReview_WhenDiffTooLargeAndHeadShaMissing_ReturnsMissingShasFirst()
     {
         var mr = BuildMr(headSha: null, diff: new string('+', 50_001));
 
-        VoidResult result = mr.MarkReviewing();
+        VoidResult result = mr.BeginReview();
 
         result.Error.Should().Be(MergeRequestErrors.MissingShas);
     }
 
-    // ── MarkPublished ──────────────────────────────────────────────────────────
+    // ── Publish ──────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void MarkPublished_WhenReady_Succeeds()
+    public void Publish_WhenReady_Succeeds()
     {
         var mr = BuildMr(headSha: "abc", diff: "diff");
-        mr.MarkReviewing();
-        mr.MarkReady();
+        mr.BeginReview();
+        mr.CompleteReview();
 
-        VoidResult result = mr.MarkPublished();
+        VoidResult result = mr.Publish();
 
         result.IsSuccess.Should().BeTrue();
-        mr.State.Should().Be(MergeRequestState.Published);
+        mr.Status.Should().BeOfType<MergeRequestStatus.Published>();
     }
 
     [Fact]
-    public void MarkPublished_WhenPending_ReturnsNotReadyError()
+    public void Publish_WhenPending_ReturnsNotReadyError()
     {
         var mr = BuildMr(headSha: "abc", diff: "diff");
 
-        VoidResult result = mr.MarkPublished();
+        VoidResult result = mr.Publish();
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(MergeRequestErrors.NotReady);
     }
 
     [Fact]
-    public void MarkPublished_WhenReviewing_ReturnsNotReadyError()
+    public void Publish_WhenReviewing_ReturnsNotReadyError()
     {
         var mr = BuildMr(headSha: "abc", diff: "diff");
-        mr.MarkReviewing();
+        mr.BeginReview();
 
-        VoidResult result = mr.MarkPublished();
+        VoidResult result = mr.Publish();
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(MergeRequestErrors.NotReady);

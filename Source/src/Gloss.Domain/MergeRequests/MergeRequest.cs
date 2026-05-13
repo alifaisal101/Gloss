@@ -17,8 +17,10 @@ public sealed class MergeRequest : AggregateRoot<Guid>
     public string? BaseSha { get; private set; }
     public string? HeadSha { get; private set; }
     public string? StartSha { get; private set; }
-    public MergeRequestState State { get; private set; }
+    public MergeRequestStatus Status { get; private set; } = null!;
+    public PlatformMrStatus PlatformStatus { get; private set; } = null!;
     public string? ReviewJobId { get; private set; }
+    public bool IsApproved { get; private set; }
 
     private MergeRequest() : base(Guid.NewGuid()) { }
 
@@ -40,38 +42,43 @@ public sealed class MergeRequest : AggregateRoot<Guid>
         var mr = new MergeRequest();
         mr.RepositoryId = repositoryId;
         mr.ProviderIid = providerIid;
-        mr.State = MergeRequestState.Pending;
+        mr.Status = new MergeRequestStatus.Pending(DateTimeOffset.UtcNow);
+        mr.PlatformStatus = new PlatformMrStatus.Open();
         mr.Apply(title, description, sourceBranch, targetBranch, authorUsername, diff, baseSha, headSha, startSha);
         return mr;
     }
 
-    public VoidResult MarkReviewing()
+    public VoidResult BeginReview()
     {
         var shaRule = CheckRule(new MergeRequestHasHeadSha(HeadSha));
         if (shaRule.IsFailure) return shaRule.Error;
 
-        var reviewingRule = CheckRule(new MergeRequestNotAlreadyReviewing(State));
+        var reviewingRule = CheckRule(new MergeRequestNotAlreadyReviewing(Status));
         if (reviewingRule.IsFailure) return reviewingRule.Error;
 
         var diffRule = CheckRule(new MergeRequestDiffNotTooLarge(Diff));
         if (diffRule.IsFailure) return diffRule.Error;
 
-        State = MergeRequestState.Reviewing;
+        Status = new MergeRequestStatus.Reviewing(DateTimeOffset.UtcNow);
         return Result.Success();
     }
 
-    public void MarkReady() => State = MergeRequestState.Ready;
+    public void CompleteReview() => Status = new MergeRequestStatus.Ready(DateTimeOffset.UtcNow);
 
-    public VoidResult MarkPublished()
+    public VoidResult Publish(Guid? byUserId = null)
     {
-        var readyRule = CheckRule(new MergeRequestIsReady(State));
+        var readyRule = CheckRule(new MergeRequestIsReady(Status));
         if (readyRule.IsFailure) return readyRule.Error;
 
-        State = MergeRequestState.Published;
+        Status = new MergeRequestStatus.Published(DateTimeOffset.UtcNow, byUserId);
         return Result.Success();
     }
 
-    public void ResetToPending() => State = MergeRequestState.Pending;
+    public void ResetToPending() => Status = new MergeRequestStatus.Pending(DateTimeOffset.UtcNow);
+
+    public void UpdatePlatformStatus(PlatformMrStatus status) => PlatformStatus = status;
+
+    public void SetApproved(bool isApproved) => IsApproved = isApproved;
 
     public void Update(
         string title,

@@ -24,7 +24,7 @@ public sealed class PublishMergeRequestHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
 
-        var markPublishedResult = mr.MarkPublished();
+        var markPublishedResult = mr.Publish();
         if (markPublishedResult.IsFailure) return markPublishedResult.Error;
 
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);

@@ -8,6 +8,12 @@ public interface IGitClient
 
     Task<MrShasData?> GetMrShasAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
 
+    Task<PlatformMrStatusData> GetMergeRequestStatusAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
+    Task<bool> IsMergeRequestApprovedAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<PlatformCommentData>> GetMrDiscussionsAsync(string projectPath, int mrIid, CancellationToken cancellationToken);
+
     Task PublishCommentAsync(
         string projectPath,
         int mrIid,

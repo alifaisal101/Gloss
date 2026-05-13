@@ -7,7 +7,8 @@ public sealed class GetMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
     IDraftCommentRepository draftCommentRepository,
     IRepositoryRepository repositoryRepository,
-    IMrCommitRepository commitRepository)
+    IMrCommitRepository commitRepository,
+    IGitClient gitClient)
 {
     public async Task<MergeRequestDetailReadModel?> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
     {
@@ -19,6 +20,10 @@ public sealed class GetMergeRequestHandler(
 
         var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         var commits = await commitRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
-        return MergeRequestDetailReadModel.From(mr, repo, comments, commits);
+
+        var rawDiscussions = await gitClient.GetMrDiscussionsAsync(repo.ProjectPath, mr.ProviderIid, cancellationToken).ConfigureAwait(false);
+        var platformComments = rawDiscussions.Select(PlatformCommentReadModel.From).ToList();
+
+        return MergeRequestDetailReadModel.From(mr, repo, comments, commits, platformComments);
     }
 }
