@@ -6,7 +6,7 @@ namespace Gloss.Domain.MergeRequests;
 
 public sealed class DraftComment : AggregateRoot<Guid>
 {
-    public Guid MergeRequestId { get; private set; }
+    public Guid MrReviewId { get; private set; }
     public string FilePath { get; private set; } = null!;
     public int Line { get; private set; }
     public string Body { get; private set; } = null!;
@@ -16,7 +16,7 @@ public sealed class DraftComment : AggregateRoot<Guid>
     private DraftComment() : base(Guid.NewGuid()) { }
 
     public static Result<DraftComment> Create(
-        Guid mergeRequestId,
+        Guid mrReviewId,
         string filePath,
         int line,
         string body,
@@ -34,7 +34,7 @@ public sealed class DraftComment : AggregateRoot<Guid>
 
         var dc = new DraftComment
         {
-            MergeRequestId = mergeRequestId,
+            MrReviewId = mrReviewId,
             FilePath = filePath,
             Line = line,
             Body = body,

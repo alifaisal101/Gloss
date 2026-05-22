@@ -4,5 +4,5 @@ namespace Gloss.Domain.MergeRequests;
 
 public interface IDraftCommentRepository : IRepository<DraftComment, Guid>
 {
-    Task<IReadOnlyList<DraftComment>> ListByMergeRequestAsync(Guid mergeRequestId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<DraftComment>> ListByMrReviewAsync(Guid mrReviewId, CancellationToken cancellationToken);
 }

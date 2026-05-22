@@ -95,7 +95,7 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<int>("Line")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("MergeRequestId")
+                    b.Property<Guid>("MrReviewId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Reasoning")
@@ -106,7 +106,7 @@ namespace Gloss.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MergeRequestId");
+                    b.HasIndex("MrReviewId");
 
                     b.ToTable("draft_comments", (string)null);
                 });
@@ -148,19 +148,12 @@ namespace Gloss.Infrastructure.Migrations
                     b.Property<Guid>("RepositoryId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ReviewJobId")
-                        .HasColumnType("text");
-
                     b.Property<string>("SourceBranch")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("StartSha")
                         .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
 
                     b.Property<string>("TargetBranch")
                         .IsRequired()
@@ -176,6 +169,33 @@ namespace Gloss.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("merge_requests", (string)null);
+                });
+
+            modelBuilder.Entity("Gloss.Domain.MergeRequests.MrReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MergeRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ReviewJobId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MergeRequestId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("mr_reviews", (string)null);
                 });
 
             modelBuilder.Entity("Gloss.Domain.MergeRequests.MrCommit", b =>
@@ -284,10 +304,10 @@ namespace Gloss.Infrastructure.Migrations
 
             modelBuilder.Entity("Gloss.Domain.MergeRequests.DraftComment", b =>
                 {
-                    b.HasOne("Gloss.Domain.MergeRequests.MergeRequest", null)
+                    b.HasOne("Gloss.Domain.MergeRequests.MrReview", null)
                         .WithMany()
-                        .HasForeignKey("MergeRequestId")
-                        .HasConstraintName("FK_draft_comments_merge_requests_MergeRequestId")
+                        .HasForeignKey("MrReviewId")
+                        .HasConstraintName("FK_draft_comments_mr_reviews_MrReviewId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -298,6 +318,16 @@ namespace Gloss.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("RepositoryId")
                         .HasConstraintName("FK_merge_requests_repositories_RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gloss.Domain.MergeRequests.MrReview", b =>
+                {
+                    b.HasOne("Gloss.Domain.MergeRequests.MergeRequest", null)
+                        .WithMany()
+                        .HasForeignKey("MergeRequestId")
+                        .HasConstraintName("FK_mr_reviews_merge_requests_MergeRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

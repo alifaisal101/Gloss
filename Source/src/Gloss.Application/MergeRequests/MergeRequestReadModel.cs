@@ -18,7 +18,7 @@ public sealed record MergeRequestReadModel(
     string? ApprovedByUsername,
     DateTimeOffset? ApprovedAt)
 {
-    public static MergeRequestReadModel From(MergeRequest mr, Repository repo)
+    public static MergeRequestReadModel From(MergeRequest mr, Repository repo, MrReview? review)
     {
         ArgumentNullException.ThrowIfNull(mr);
         ArgumentNullException.ThrowIfNull(repo);
@@ -31,7 +31,7 @@ public sealed record MergeRequestReadModel(
             mr.SourceBranch,
             mr.TargetBranch,
             mr.AuthorUsername,
-            mr.Status.GetType().Name,
+            review?.Status.GetType().Name ?? "Pending",
             mr.PlatformStatus.GetType().Name,
             repo.ProjectPath,
             approved is not null,

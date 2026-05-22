@@ -6,6 +6,7 @@ namespace Gloss.Application.MergeRequests.GetMergeRequest;
 
 public sealed class GetMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
+    IMrReviewRepository mrReviewRepository,
     IDraftCommentRepository draftCommentRepository,
     IRepositoryRepository repositoryRepository,
     IMrCommitRepository commitRepository,
@@ -20,14 +21,21 @@ public sealed class GetMergeRequestHandler(
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repo is null) return null;
 
-        mr.MarkSeen();
+        var review = await mrReviewRepository.FindAsync(mergeRequestId, Guid.Empty, cancellationToken).ConfigureAwait(false);
+        if (review is null)
+        {
+            review = MrReview.Create(mergeRequestId, Guid.Empty);
+            domainContext.Save<MrReview, Guid>(review);
+        }
+
+        review.MarkSeen();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        var comments = await draftCommentRepository.ListByMrReviewAsync(review.Id, cancellationToken).ConfigureAwait(false);
         var commits = await commitRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         var rawDiscussions = await gitClient.GetMrDiscussionsAsync(repo.ProjectPath, mr.ProviderIid, cancellationToken).ConfigureAwait(false);
         var platformComments = rawDiscussions.Select(PlatformCommentReadModel.From).ToList();
 
-        return MergeRequestDetailReadModel.From(mr, repo, comments, commits, platformComments);
+        return MergeRequestDetailReadModel.From(mr, review, repo, comments, commits, platformComments);
     }
 }

@@ -33,38 +33,40 @@ public sealed class PullMergeRequestsHandler(
         var existingMrs = await mergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         var existingByIid = existingMrs.ToDictionary(mr => mr.ProviderIid);
         var remoteIids = remoteMrs.Select(r => r.Iid).ToHashSet();
-        var newMrs = new List<MergeRequest>();
+        var newReviews = new List<MrReview>();
 
         foreach (var remote in remoteMrs)
-            newMrs.AddRange(await ProcessOpenMrAsync(repository, remote, existingByIid, cancellationToken).ConfigureAwait(false));
+            newReviews.AddRange(await ProcessOpenMrAsync(repository, remote, existingByIid, cancellationToken).ConfigureAwait(false));
 
         await UpdateDisappearedMrStatusesAsync(repository, existingMrs, remoteIids, cancellationToken).ConfigureAwait(false);
 
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        if (repository.AutoReviewEnabled && newMrs.Count > 0)
+        if (repository.AutoReviewEnabled && newReviews.Count > 0)
         {
-            foreach (var newMr in newMrs)
-                newMr.SetReviewJobId(jobScheduler.EnqueueReview(newMr.Id));
+            foreach (var review in newReviews)
+                review.SetReviewJobId(jobScheduler.EnqueueReview(review.MergeRequestId));
             await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return Result.Success();
     }
 
-    private async Task<IEnumerable<MergeRequest>> ProcessOpenMrAsync(
+    private async Task<IEnumerable<MrReview>> ProcessOpenMrAsync(
         Repository repository,
         MergeRequestData remote,
         Dictionary<int, MergeRequest> existingByIid,
         CancellationToken cancellationToken)
     {
         MergeRequest mr;
-        var isNew = false;
+        bool isNew;
 
         if (existingByIid.TryGetValue(remote.Iid, out var existing))
         {
-            existing.Update(remote.Title, remote.Description, remote.SourceBranch, remote.TargetBranch, remote.AuthorUsername, remote.Diff, remote.BaseSha, remote.HeadSha, remote.StartSha);
+            existing.Update(remote.Title, remote.Description, remote.SourceBranch, remote.TargetBranch,
+                remote.AuthorUsername, remote.Diff, remote.BaseSha, remote.HeadSha, remote.StartSha);
             mr = existing;
+            isNew = false;
 
             var staleCommits = await commitRepository.ListByMergeRequestAsync(mr.Id, cancellationToken).ConfigureAwait(false);
             foreach (var stale in staleCommits)
@@ -90,7 +92,11 @@ public sealed class PullMergeRequestsHandler(
         foreach (var commit in remoteCommits)
             domainContext.Save<MrCommit, Guid>(MrCommit.Create(mr.Id, commit.Sha, commit.Title, commit.AuthorName, commit.Diff));
 
-        return isNew ? [mr] : [];
+        if (!isNew) return [];
+
+        var review = MrReview.Create(mr.Id, Guid.Empty);
+        domainContext.Save<MrReview, Guid>(review);
+        return [review];
     }
 
     private async Task UpdateDisappearedMrStatusesAsync(

@@ -10,6 +10,7 @@ namespace Gloss.Application.Reviews.ReviewMergeRequest;
 
 public sealed class ReviewMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
+    IMrReviewRepository mrReviewRepository,
     IRepositoryRepository repositoryRepository,
     IDraftCommentRepository draftCommentRepository,
     IRepoManager repoManager,
@@ -21,11 +22,15 @@ public sealed class ReviewMergeRequestHandler(
     {
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
+
+        var review = await mrReviewRepository.FindAsync(mergeRequestId, Guid.Empty, cancellationToken).ConfigureAwait(false);
+        if (review is null) return MergeRequestErrors.NotFound;
+
         var repository = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repository is null) return MergeRequestErrors.RepositoryNotFound;
 
-        var markReviewingResult = mr.BeginReview();
-        if (markReviewingResult.IsFailure) return markReviewingResult.Error;
+        var beginResult = review.BeginReview(mr.HeadSha, mr.Diff);
+        if (beginResult.IsFailure) return beginResult.Error;
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         string localPath;
@@ -35,7 +40,7 @@ public sealed class ReviewMergeRequestHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            mr.ResetToPending();
+            review.ResetToPending();
             await domainContext.CommitAsync(CancellationToken.None).ConfigureAwait(false);
             return MergeRequestErrors.RepoCloneFailed;
         }
@@ -54,18 +59,18 @@ public sealed class ReviewMergeRequestHandler(
             return MergeRequestErrors.LlmProviderUnauthorized;
         }
 
-        var existing = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        var existing = await draftCommentRepository.ListByMrReviewAsync(review.Id, cancellationToken).ConfigureAwait(false);
         foreach (var c in existing)
             domainContext.Remove<DraftComment, Guid>(c);
 
         foreach (var comment in comments)
         {
-            var dc = DraftComment.Create(mergeRequestId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
+            var dc = DraftComment.Create(review.Id, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
             if (dc.IsSuccess)
                 domainContext.Save<DraftComment, Guid>(dc.Value);
         }
 
-        mr.CompleteReview();
+        review.CompleteReview();
         await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }

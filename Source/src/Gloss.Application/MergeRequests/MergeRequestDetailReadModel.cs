@@ -24,12 +24,14 @@ public sealed record MergeRequestDetailReadModel(
 {
     public static MergeRequestDetailReadModel From(
         MergeRequest mr,
+        MrReview review,
         Repository repo,
         IReadOnlyList<DraftComment> comments,
         IReadOnlyList<MrCommit> commits,
         IReadOnlyList<PlatformCommentReadModel> platformComments)
     {
         ArgumentNullException.ThrowIfNull(mr);
+        ArgumentNullException.ThrowIfNull(review);
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(comments);
         ArgumentNullException.ThrowIfNull(commits);
@@ -46,7 +48,7 @@ public sealed record MergeRequestDetailReadModel(
         return new(
             mr.Id,
             mr.Title,
-            mr.Status.GetType().Name,
+            review.Status.GetType().Name,
             mr.PlatformStatus.GetType().Name,
             platformOccurredAt,
             platformBy,

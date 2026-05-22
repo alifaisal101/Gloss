@@ -5,18 +5,9 @@ namespace Gloss.UnitTests.MergeRequests;
 public sealed class MergeRequestTests
 {
     [Fact]
-    public void Create_StartsInPendingState()
-    {
-        var mr = BuildMr();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
-    }
-
-    [Fact]
     public void Create_SetsAllProperties()
     {
         var repoId = Guid.NewGuid();
-
         var mr = MergeRequest.Create(repoId, 42, "Fix bug", "A description",
             "fix/bug", "main", "alice", "diff content", "base", "head", "start");
 
@@ -34,6 +25,14 @@ public sealed class MergeRequestTests
     }
 
     [Fact]
+    public void Create_AssignsUniqueId()
+    {
+        var mr1 = BuildMr();
+        var mr2 = BuildMr();
+        mr1.Id.Should().NotBe(mr2.Id);
+    }
+
+    [Fact]
     public void Create_WithNullOptionalFields_SetsThemToNull()
     {
         var mr = MergeRequest.Create(Guid.NewGuid(), 1, "Title", null,
@@ -46,89 +45,23 @@ public sealed class MergeRequestTests
     }
 
     [Fact]
-    public void Create_AssignsUniqueId()
+    public void Create_StartsWithOpenPlatformStatus()
     {
-        var mr1 = BuildMr();
-        var mr2 = BuildMr();
-
-        mr1.Id.Should().NotBe(mr2.Id);
+        var mr = BuildMr();
+        mr.PlatformStatus.Should().BeOfType<PlatformMrStatus.Open>();
     }
 
     [Fact]
-    public void BeginReview_TransitionsToReviewingState()
+    public void Create_StartsWithNotApprovedApproval()
     {
         var mr = BuildMr();
-
-        mr.BeginReview();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
-    }
-
-    [Fact]
-    public void CompleteReview_TransitionsToReadyState()
-    {
-        var mr = BuildMr();
-        mr.BeginReview();
-
-        mr.CompleteReview();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Ready>();
-    }
-
-    [Fact]
-    public void Publish_TransitionsToPublishedState()
-    {
-        var mr = BuildMr();
-        mr.BeginReview();
-        mr.CompleteReview();
-
-        mr.Publish();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Published>();
-    }
-
-    [Fact]
-    public void ResetToPending_FromReviewing_ReturnsToPendingState()
-    {
-        var mr = BuildMr();
-        mr.BeginReview();
-
-        mr.ResetToPending();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
-    }
-
-    [Fact]
-    public void ResetToPending_FromReady_ReturnsToPendingState()
-    {
-        var mr = BuildMr();
-        mr.BeginReview();
-        mr.CompleteReview();
-
-        mr.ResetToPending();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
-    }
-
-    [Fact]
-    public void FullReviewCycle_TransitionsCorrectly()
-    {
-        var mr = BuildMr();
-
-        mr.Status.Should().BeOfType<MergeRequestStatus.Pending>();
-        mr.BeginReview();
-        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
-        mr.CompleteReview();
-        mr.Status.Should().BeOfType<MergeRequestStatus.Ready>();
-        mr.Publish();
-        mr.Status.Should().BeOfType<MergeRequestStatus.Published>();
+        mr.Approval.Should().BeOfType<ApprovalStatus.NotApproved>();
     }
 
     [Fact]
     public void Update_ReplacesAllMutableFields()
     {
         var mr = BuildMr();
-
         mr.Update("New title", "New desc", "feature/new", "develop",
             "bob", "new diff", "base2", "head2", "start2");
 
@@ -144,25 +77,19 @@ public sealed class MergeRequestTests
     }
 
     [Fact]
-    public void Update_DoesNotChangeRepositoryIdOrState()
+    public void Update_DoesNotChangeRepositoryId()
     {
         var repoId = Guid.NewGuid();
         var mr = MergeRequest.Create(repoId, 1, "Title", null, "src", "main", "alice", "diff", null, "head1", null);
-        mr.BeginReview();
-
         mr.Update("New title", null, "src", "main", "alice", "diff", null, null, null);
-
         mr.RepositoryId.Should().Be(repoId);
-        mr.Status.Should().BeOfType<MergeRequestStatus.Reviewing>();
     }
 
     [Fact]
     public void Update_CanClearOptionalFields()
     {
         var mr = MergeRequest.Create(Guid.NewGuid(), 1, "Title", "desc", "src", "main", "alice", "diff", "b", "h", "s");
-
         mr.Update("Title", null, "src", "main", "alice", "diff", null, null, null);
-
         mr.Description.Should().BeNull();
         mr.BaseSha.Should().BeNull();
         mr.HeadSha.Should().BeNull();
@@ -173,7 +100,6 @@ public sealed class MergeRequestTests
     public void HasShas_WhenAllPresent_IsTrue()
     {
         var mr = MergeRequest.Create(Guid.NewGuid(), 1, "T", null, "s", "m", "a", "d", "base", "head", "start");
-
         (mr.BaseSha is not null && mr.HeadSha is not null && mr.StartSha is not null).Should().BeTrue();
     }
 
@@ -181,7 +107,6 @@ public sealed class MergeRequestTests
     public void HasShas_WhenAnyMissing_IsFalse()
     {
         var mr = MergeRequest.Create(Guid.NewGuid(), 1, "T", null, "s", "m", "a", "d", null, "head", "start");
-
         (mr.BaseSha is not null && mr.HeadSha is not null && mr.StartSha is not null).Should().BeFalse();
     }
 

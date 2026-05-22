@@ -3,6 +3,7 @@ using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Events;
 using BuildingBlocks.Infrastructure.Persistence;
 using Gloss.Application.MergeRequests;
+using Gloss.Domain.MergeRequests;
 using Gloss.Application.Projection;
 using Gloss.Application.Repositories;
 using Gloss.Application.Reviews;
@@ -29,6 +30,7 @@ public static class GlossInfrastructureServices
         services.AddBuildingBlocksEvents();
         services.AddScoped<IEventStore, GlossEventStore>();
         services.AddScoped<IReviewerProjectionRepository, ReviewerProjectionRepository>();
+        services.AddScoped<IMrReviewRepository, MrReviewRepository>();
         services.AddScoped<IProjectionEngine, AnthropicProjectionEngine>();
         services.AddScoped<IRepoManager, RepoManager>();
         services.AddHttpClient<IGitClient, GitLabClient>();

@@ -27,7 +27,7 @@ public sealed class DraftCommentTests
 
         var comment = DraftComment.Create(mrId, "src/Foo.cs", 42, "Null check missing", "Can throw here").Value;
 
-        comment.MergeRequestId.Should().Be(mrId);
+        comment.MrReviewId.Should().Be(mrId);
         comment.FilePath.Should().Be("src/Foo.cs");
         comment.Line.Should().Be(42);
         comment.Body.Should().Be("Null check missing");
@@ -87,14 +87,14 @@ public sealed class DraftCommentTests
     }
 
     [Fact]
-    public void Update_DoesNotChangeMergeRequestId()
+    public void Update_DoesNotChangeMrReviewId()
     {
         var mrId = Guid.NewGuid();
         var comment = DraftComment.Create(mrId, "src/Foo.cs", 1, "body", null).Value;
 
         comment.Update("src/Bar.cs", 2, "new body", null);
 
-        comment.MergeRequestId.Should().Be(mrId);
+        comment.MrReviewId.Should().Be(mrId);
     }
 
     [Fact]

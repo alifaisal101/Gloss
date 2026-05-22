@@ -12,6 +12,7 @@ namespace Gloss.Application.Reviews.PublishMergeRequest;
 
 public sealed class PublishMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
+    IMrReviewRepository mrReviewRepository,
     IDraftCommentRepository draftCommentRepository,
     IRepositoryRepository repositoryRepository,
     IGitClient gitClient,
@@ -24,13 +25,16 @@ public sealed class PublishMergeRequestHandler(
         var mr = await mergeRequestRepository.GetByIdAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
         if (mr is null) return MergeRequestErrors.NotFound;
 
-        var markPublishedResult = mr.Publish();
-        if (markPublishedResult.IsFailure) return markPublishedResult.Error;
+        var review = await mrReviewRepository.FindAsync(mergeRequestId, Guid.Empty, cancellationToken).ConfigureAwait(false);
+        if (review is null) return MergeRequestErrors.NotFound;
+
+        var publishResult = review.Publish();
+        if (publishResult.IsFailure) return publishResult.Error;
 
         var repo = await repositoryRepository.GetByIdAsync(mr.RepositoryId, cancellationToken).ConfigureAwait(false);
         if (repo is null) return MergeRequestErrors.RepositoryNotFound;
 
-        var comments = await draftCommentRepository.ListByMergeRequestAsync(mergeRequestId, cancellationToken).ConfigureAwait(false);
+        var comments = await draftCommentRepository.ListByMrReviewAsync(review.Id, cancellationToken).ConfigureAwait(false);
         var shas = await gitClient.GetMrShasAsync(repo.ProjectPath, mr.ProviderIid, cancellationToken).ConfigureAwait(false);
 
         try
