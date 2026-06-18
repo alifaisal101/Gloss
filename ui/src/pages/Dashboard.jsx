@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client.js';
+import { RefreshCw, Trash2, GitPullRequest, AlertCircle } from 'lucide-react';
+import { useMrs, useConfig, usePollAll, useDeleteMr } from '../api/queries.js';
+import Button from '../components/ui/Button.jsx';
+import StateBadge from '../components/ui/StateBadge.jsx';
+import Skeleton from '../components/ui/Skeleton.jsx';
+import EmptyState from '../components/ui/EmptyState.jsx';
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 
 const STATE_ORDER = ['Reviewing', 'Pending', 'Ready', 'Published'];
 const STATE_LABEL = {
@@ -11,114 +17,85 @@ const STATE_LABEL = {
 };
 
 export default function Dashboard() {
-  const [mrs, setMrs] = useState([]);
-  const [config, setConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [polling, setPolling] = useState(false);
-  const [error, setError] = useState(null);
+  const { data: config } = useConfig({
+    refetchInterval: (q) => (q.state.data?.isPolling ? 3000 : false),
+  });
+  const mrsQuery = useMrs({
+    refetchInterval: (q) => {
+      const data = q.state.data ?? [];
+      const reviewing = data.some((m) => m.state === 'Reviewing');
+      return reviewing || config?.isPolling ? 4000 : false;
+    },
+  });
+  const pollAll = usePollAll();
 
-  const load = useCallback(() =>
-    Promise.all([
-      api.listMrs().then(setMrs),
-      api.getConfig().then(setConfig),
-    ]).catch(setError)
-  , []);
+  const mrs = mrsQuery.data ?? [];
+  const isPolling = pollAll.isPending || config?.isPolling === true;
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
-
-  useEffect(() => {
-    if (!config?.isPolling) return;
-    const timer = setInterval(() => {
-      api.getConfig().then(setConfig).catch(() => {});
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [config?.isPolling]);
-
-  async function handlePollNow() {
-    setPolling(true);
-    setError(null);
-    try {
-      await api.pollAll();
-      await load();
-    } catch (err) {
-      setError(err);
-    } finally {
-      setPolling(false);
-    }
-  }
-
-  if (loading) return <div className="loading">Loading…</div>;
-
-  const isPollingFromServer = config?.isPolling === true;
   const grouped = STATE_ORDER.reduce((acc, state) => {
-    acc[state] = mrs.filter(mr => mr.state === state);
+    acc[state] = mrs.filter((mr) => mr.state === state);
     return acc;
   }, {});
-
-  const actionable = (grouped['Pending']?.length ?? 0) + (grouped['Ready']?.length ?? 0);
+  const actionable = (grouped.Pending?.length ?? 0) + (grouped.Ready?.length ?? 0);
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1>Merge Requests</h1>
-          {actionable > 0 && (
-            <div className="page-subtitle">{actionable} need attention</div>
-          )}
+          {actionable > 0 && <div className="page-subtitle">{actionable} need attention</div>}
         </div>
         <div className="page-actions">
-          <button className="btn" onClick={handlePollNow} disabled={polling || isPollingFromServer}>
-            {polling || isPollingFromServer ? 'Polling…' : 'Poll now'}
-          </button>
+          <Button icon={RefreshCw} onClick={() => pollAll.mutate()} loading={isPolling} disabled={isPolling}>
+            {isPolling ? 'Polling…' : 'Poll now'}
+          </Button>
         </div>
       </div>
 
-      {error && <div className="error" style={{ marginBottom: 16 }}>{error.message}</div>}
-
-      {STATE_ORDER.map(state =>
-        grouped[state].length > 0 ? (
-          <section key={state} className="mr-group">
-            <div className="mr-group-header">
-              <span className={`state-badge state-${state.toLowerCase()}`}>{state}</span>
-              <span className="muted">{STATE_LABEL[state]}</span>
-              <span className="mr-count">{grouped[state].length}</span>
-            </div>
-            <div className="mr-list">
-              {grouped[state].map(mr => (
-                <MrCard key={mr.id} mr={mr} onDelete={id => setMrs(ms => ms.filter(m => m.id !== id))} />
-              ))}
-            </div>
-          </section>
-        ) : null
+      {mrsQuery.isError && (
+        <div className="banner banner-error">
+          <AlertCircle size={16} aria-hidden="true" />
+          <span>{mrsQuery.error.message}</span>
+          <Button variant="ghost" size="sm" onClick={() => mrsQuery.refetch()}>Retry</Button>
+        </div>
       )}
 
-      {mrs.length === 0 && (
-        <div className="empty">
-          No merge requests yet.{' '}
-          <button className="btn-ghost btn-sm" onClick={handlePollNow} disabled={polling || isPollingFromServer}>
-            {polling || isPollingFromServer ? 'Polling…' : 'Poll now'}
-          </button>
-        </div>
+      {mrsQuery.isLoading ? (
+        <MrListSkeleton />
+      ) : mrs.length === 0 && !mrsQuery.isError ? (
+        <EmptyState
+          icon={GitPullRequest}
+          title="No merge requests yet"
+          description="Poll your configured repositories to pull in open merge requests for review."
+          action={
+            <Button icon={RefreshCw} onClick={() => pollAll.mutate()} loading={isPolling} disabled={isPolling}>
+              Poll now
+            </Button>
+          }
+        />
+      ) : (
+        STATE_ORDER.map((state) =>
+          grouped[state].length > 0 ? (
+            <section key={state} className="mr-group">
+              <div className="mr-group-header">
+                <StateBadge state={state} />
+                <span className="muted">{STATE_LABEL[state]}</span>
+                <span className="mr-count">{grouped[state].length}</span>
+              </div>
+              <div className="mr-list">
+                {grouped[state].map((mr) => <MrCard key={mr.id} mr={mr} />)}
+              </div>
+            </section>
+          ) : null,
+        )
       )}
     </div>
   );
 }
 
-function MrCard({ mr, onDelete }) {
-  const [deleting, setDeleting] = useState(false);
-
-  async function handleDelete(e) {
-    e.preventDefault();
-    setDeleting(true);
-    try {
-      await api.deleteMr(mr.id);
-      onDelete(mr.id);
-    } catch {
-      setDeleting(false);
-    }
-  }
+function MrCard({ mr }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const deleteMr = useDeleteMr();
 
   return (
     <div className="mr-card">
@@ -130,9 +107,44 @@ function MrCard({ mr, onDelete }) {
           <span className="muted">{mr.authorUsername}</span>
         </div>
       </Link>
-      <button className="btn-ghost btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-        {deleting ? '…' : 'Delete'}
-      </button>
+      <Button
+        variant="dangerGhost"
+        size="sm"
+        icon={Trash2}
+        aria-label="Delete merge request"
+        onClick={() => setConfirmOpen(true)}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete merge request?"
+        description={`“${mr.title}” will be removed from Gloss. This does not affect the merge request on your Git platform.`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleteMr.isPending}
+        onConfirm={() => deleteMr.mutate(mr.id, { onSuccess: () => setConfirmOpen(false) })}
+      />
+    </div>
+  );
+}
+
+function MrListSkeleton() {
+  return (
+    <div className="mr-group">
+      <div className="mr-group-header"><Skeleton width={90} height={20} radius={12} /></div>
+      <div className="mr-list">
+        {[0, 1, 2].map((i) => (
+          <div className="mr-card" key={i}>
+            <div className="mr-card-link">
+              <Skeleton width="55%" height={15} />
+              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                <Skeleton width={120} height={12} />
+                <Skeleton width={160} height={12} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

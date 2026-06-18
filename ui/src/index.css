@@ -985,3 +985,20 @@ select:focus { outline: none; border-color: var(--accent); }
   from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+
+/* Inline banner (page-level errors / notices) */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.banner > span { flex: 1; }
+.banner-error {
+  background: var(--diff-del-bg);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
