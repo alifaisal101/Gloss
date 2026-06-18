@@ -55,6 +55,7 @@ export const api = {
   reviewMr: (id) => request('POST', `/merge-requests/${id}/review`),
   publishMr: (id) => request('POST', `/merge-requests/${id}/publish`),
   deleteMr: (id) => request('DELETE', `/merge-requests/${id}`),
+  ignoreMr: (id) => request('POST', `/merge-requests/${id}/ignore`),
   pollAll: () => request('POST', '/repositories/poll-all'),
 
   // Comments

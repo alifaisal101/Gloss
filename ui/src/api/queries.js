@@ -47,6 +47,22 @@ export function useDeleteMr() {
   });
 }
 
+export function useIgnoreMr() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.ignoreMr(id),
+    onSuccess: () => {
+      toast.success('Merge request ignored', { description: 'It won’t be pulled again.' });
+      qc.invalidateQueries({ queryKey: keys.mrs });
+    },
+    onError: (err) => toast.error('Could not ignore merge request', { description: err.message }),
+  });
+}
+
+export function useSaveConfig() {
+  return useMutation({ mutationFn: (config) => api.updateConfig(config) });
+}
+
 export function useReviewMr(mrId) {
   const qc = useQueryClient();
   return useMutation({
