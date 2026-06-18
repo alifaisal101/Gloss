@@ -4,14 +4,16 @@ using System.Text.Json.Serialization;
 using BuildingBlocks.Domain.Abstractions;
 using Gloss.Domain.Configs;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Gloss.Infrastructure.Reviews.Anthropic;
 
-internal sealed class AnthropicApiClient(
+internal sealed partial class AnthropicApiClient(
     HttpClient httpClient,
     IConfigRepository configRepository,
     ISecretEncryptor encryptor,
-    IConfiguration configuration) : IClaudeApiClient
+    IConfiguration configuration,
+    ILogger<AnthropicApiClient> logger) : IClaudeApiClient
 {
     public async Task<ClaudeResponse> SendAsync(
         string systemPrompt,
@@ -39,7 +41,15 @@ internal sealed class AnthropicApiClient(
         request.Content = JsonContent.Create(requestBody, options: SerializerOptions);
 
         var httpResponse = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        httpResponse.EnsureSuccessStatusCode();
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            var errorBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            LogRequestFailed(logger, (int)httpResponse.StatusCode, model, errorBody);
+            throw new HttpRequestException(
+                $"Anthropic request failed ({(int)httpResponse.StatusCode}): {errorBody}",
+                null,
+                httpResponse.StatusCode);
+        }
 
         var result = await httpResponse.Content
             .ReadFromJsonAsync<AnthropicResponse>(SerializerOptions, cancellationToken)
@@ -125,6 +135,9 @@ internal sealed class AnthropicApiClient(
             block.Input.HasValue ? JsonSerializer.Serialize(block.Input.Value, SerializerOptions) : "{}"),
         _ => null
     };
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Anthropic API request failed: HTTP {StatusCode} for model {Model}. Response body: {ResponseBody}")]
+    private static partial void LogRequestFailed(ILogger logger, int statusCode, string model, string responseBody);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {

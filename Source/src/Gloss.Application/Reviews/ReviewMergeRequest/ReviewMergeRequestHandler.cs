@@ -5,10 +5,11 @@ using Gloss.Application.Repositories;
 using Gloss.Domain.MergeRequests;
 using Gloss.Domain.Projection;
 using Gloss.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Gloss.Application.Reviews.ReviewMergeRequest;
 
-public sealed class ReviewMergeRequestHandler(
+public sealed partial class ReviewMergeRequestHandler(
     IMergeRequestRepository mergeRequestRepository,
     IMrReviewRepository mrReviewRepository,
     IRepositoryRepository repositoryRepository,
@@ -16,7 +17,8 @@ public sealed class ReviewMergeRequestHandler(
     IRepoManager repoManager,
     IReviewProvider reviewProvider,
     IReviewerProjectionRepository projectionRepository,
-    IDomainContext domainContext)
+    IDomainContext domainContext,
+    ILogger<ReviewMergeRequestHandler> logger)
 {
     public async Task<VoidResult> HandleAsync(Guid mergeRequestId, CancellationToken cancellationToken)
     {
@@ -40,6 +42,7 @@ public sealed class ReviewMergeRequestHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            LogRepoCloneFailed(logger, mergeRequestId, ex);
             review.ResetToPending();
             await domainContext.CommitAsync(CancellationToken.None).ConfigureAwait(false);
             return MergeRequestErrors.RepoCloneFailed;
@@ -59,6 +62,7 @@ public sealed class ReviewMergeRequestHandler(
             // Any review failure (auth, a bad/unknown model → 404, transport, parse) must release the
             // aggregate from "Reviewing" so the user can retry — never leave it wedged. Mirrors the
             // repo-clone failure path above.
+            LogReviewFailed(logger, mergeRequestId, ex);
             review.ResetToPending();
             await domainContext.CommitAsync(CancellationToken.None).ConfigureAwait(false);
             return ex is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden }
@@ -86,4 +90,10 @@ public sealed class ReviewMergeRequestHandler(
                 domainContext.Save<DraftComment, Guid>(dc.Value);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Repository clone/fetch failed for merge request {MergeRequestId}; resetting to Pending")]
+    private static partial void LogRepoCloneFailed(ILogger logger, Guid mergeRequestId, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Review failed for merge request {MergeRequestId}; resetting to Pending")]
+    private static partial void LogReviewFailed(ILogger logger, Guid mergeRequestId, Exception exception);
 }
