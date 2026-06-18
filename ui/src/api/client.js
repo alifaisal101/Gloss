@@ -1,12 +1,49 @@
 const BASE = '/api';
 
+export class ApiError extends Error {
+  constructor(status, code, message, fieldErrors, body) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.fieldErrors = fieldErrors ?? null;
+    this.body = body ?? null;
+  }
+}
+
+async function readError(res) {
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+
+  // BuildingBlocks envelope: { status, error: { code, message }, traceId }
+  if (payload?.error?.message) {
+    return new ApiError(res.status, payload.error.code ?? null, payload.error.message, null, payload);
+  }
+  // ASP.NET ProblemDetails: { title, detail, errors: { field: [msg] } }
+  if (payload?.detail || payload?.title) {
+    return new ApiError(res.status, payload.type ?? null, payload.detail || payload.title, payload.errors ?? null, payload);
+  }
+  // Bare status (e.g. Results.NotFound() with no body)
+  const fallback = `${res.status} ${res.statusText}`.trim() || `Request failed (${res.status})`;
+  return new ApiError(res.status, null, fallback, null, payload);
+}
+
 async function request(method, path, body) {
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers: body != null ? { 'Content-Type': 'application/json' } : {},
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${res.statusText}`);
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      headers: body != null ? { 'Content-Type': 'application/json' } : {},
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, 'network', 'Could not reach the server. Check that the API is running and reachable.', null, null);
+  }
+  if (!res.ok) throw await readError(res);
   if (res.status === 204) return null;
   return res.json();
 }
