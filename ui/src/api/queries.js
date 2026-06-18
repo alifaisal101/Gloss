@@ -59,6 +59,31 @@ export function useIgnoreMr() {
   });
 }
 
+export function useRepositories(options = {}) {
+  return useQuery({ queryKey: keys.repositories, queryFn: api.listRepositories, ...options });
+}
+
+export function useUpdateRepository() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fields }) => api.updateRepository(id, fields),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.repositories }),
+    onError: (err) => toast.error('Could not update repository', { description: err.message }),
+  });
+}
+
+export function useDeleteRepository() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteRepository(id),
+    onSuccess: () => {
+      toast.success('Repository removed');
+      qc.invalidateQueries({ queryKey: keys.repositories });
+    },
+    onError: (err) => toast.error('Could not remove repository', { description: err.message }),
+  });
+}
+
 export function useSaveConfig() {
   return useMutation({ mutationFn: (config) => api.updateConfig(config) });
 }
