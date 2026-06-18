@@ -87,6 +87,32 @@ public sealed class ConfigTests(GlossApiFactory factory) : IClassFixture<GlossAp
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // Production bug: claude-opus-4-8 caps output at 128k, but LlmMaxTokens was saved unbounded, so
+    // 160000 was accepted and then 400'd on every review ("max_tokens: 160000 > 128000"). max_tokens
+    // must be validated against the configured model's documented output-token limit.
+    [Theory]
+    [InlineData("claude-opus-4-8", 160000)]
+    [InlineData("claude-opus-4-8", 128001)]
+    [InlineData("claude-sonnet-4-6", 64001)]
+    public async Task Put_WithMaxTokensAboveModelLimit_IsRejected(string model, int maxTokens)
+    {
+        var response = await _client.PutAsJsonAsync("/api/config",
+            ValidConfig() with { LlmModel = model, LlmMaxTokens = maxTokens });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory]
+    [InlineData("claude-opus-4-8", 128000)]
+    [InlineData("claude-sonnet-4-6", 64000)]
+    public async Task Put_WithMaxTokensWithinModelLimit_ReturnsOk(string model, int maxTokens)
+    {
+        var response = await _client.PutAsJsonAsync("/api/config",
+            ValidConfig() with { LlmModel = model, LlmMaxTokens = maxTokens });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task Get_AfterSavingConfig_SecretsAreNotExposed()
     {
