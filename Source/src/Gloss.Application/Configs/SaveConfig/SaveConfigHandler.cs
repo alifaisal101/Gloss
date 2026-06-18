@@ -28,6 +28,9 @@ public sealed class SaveConfigHandler(
         var llmProviderResult = LlmProvider.Create(command.LlmProvider);
         if (llmProviderResult.IsFailure) return llmProviderResult.Error;
 
+        if (!llmProviderResult.Value.IsValidModel(command.LlmModel))
+            return ConfigErrors.InvalidLlmModel;
+
         var existing = await repository.FindAsync(cancellationToken).ConfigureAwait(false);
 
         var encryptedGitToken = ResolveSecret(command.GitToken, existing?.GitToken, out var gitTokenError);

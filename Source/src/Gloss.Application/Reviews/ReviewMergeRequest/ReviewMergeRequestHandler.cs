@@ -54,24 +54,36 @@ public sealed class ReviewMergeRequestHandler(
             var context = new ReviewContext(mr.Diff, localPath, projection?.Content);
             comments = await reviewProvider.ReviewAsync(context, cancellationToken).ConfigureAwait(false);
         }
-        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return MergeRequestErrors.LlmProviderUnauthorized;
+            // Any review failure (auth, a bad/unknown model → 404, transport, parse) must release the
+            // aggregate from "Reviewing" so the user can retry — never leave it wedged. Mirrors the
+            // repo-clone failure path above.
+            review.ResetToPending();
+            await domainContext.CommitAsync(CancellationToken.None).ConfigureAwait(false);
+            return ex is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden }
+                ? MergeRequestErrors.LlmProviderUnauthorized
+                : MergeRequestErrors.ReviewFailed;
         }
 
-        var existing = await draftCommentRepository.ListByMrReviewAsync(review.Id, cancellationToken).ConfigureAwait(false);
+        await ReplaceDraftCommentsAsync(review.Id, comments, cancellationToken).ConfigureAwait(false);
+
+        review.CompleteReview();
+        await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
+
+    private async Task ReplaceDraftCommentsAsync(Guid reviewId, IReadOnlyList<ReviewComment> comments, CancellationToken cancellationToken)
+    {
+        var existing = await draftCommentRepository.ListByMrReviewAsync(reviewId, cancellationToken).ConfigureAwait(false);
         foreach (var c in existing)
             domainContext.Remove<DraftComment, Guid>(c);
 
         foreach (var comment in comments)
         {
-            var dc = DraftComment.Create(review.Id, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
+            var dc = DraftComment.Create(reviewId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
             if (dc.IsSuccess)
                 domainContext.Save<DraftComment, Guid>(dc.Value);
         }
-
-        review.CompleteReview();
-        await domainContext.CommitAsync(cancellationToken).ConfigureAwait(false);
-        return Result.Success();
     }
 }

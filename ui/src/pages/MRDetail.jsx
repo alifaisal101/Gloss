@@ -12,10 +12,11 @@ export default function MRDetail() {
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedCommit, setSelectedCommit] = useState(null);
+  const [selectedSha, setSelectedSha] = useState(null);
   const [commitsExpanded, setCommitsExpanded] = useState(true);
 
   useEffect(() => {
+    setSelectedSha(null);
     api.getMr(id)
       .then(setMr)
       .catch(setError)
@@ -29,7 +30,7 @@ export default function MRDetail() {
       await api.reviewMr(id);
       const updated = await api.getMr(id);
       setMr(updated);
-      setSelectedCommit(null);
+      setSelectedSha(null);
     } catch (err) {
       setError(err);
     } finally {
@@ -85,6 +86,9 @@ export default function MRDetail() {
   const comments = mr.comments ?? [];
   // GitLab returns commits newest-first; reverse so index 0 = oldest
   const commits = [...(mr.commits ?? [])].reverse();
+  // Selection is keyed by sha and resolved against the *current* commits, so it survives an mr
+  // refetch and falls back to "All changes" (full mr.diff) if the sha is gone — never a stale commit.
+  const selectedCommit = selectedSha ? commits.find(c => c.sha === selectedSha) ?? null : null;
   const canReview = mr.state === 'Pending' || mr.state === 'Ready';
   const isReviewing = mr.state === 'Reviewing';
   const canPublish = mr.state === 'Ready';
@@ -153,7 +157,7 @@ export default function MRDetail() {
             <div className="commits-list">
               <button
                 className={`commits-all-btn${!selectedCommit ? ' active' : ''}`}
-                onClick={() => setSelectedCommit(null)}
+                onClick={() => setSelectedSha(null)}
               >
                 <span className="commits-all-label">All changes</span>
                 {comments.length > 0 && (
@@ -167,7 +171,7 @@ export default function MRDetail() {
                 <button
                   key={c.sha}
                   className={`commit-row${selectedCommit?.sha === c.sha ? ' active' : ''}`}
-                  onClick={() => setSelectedCommit(c)}
+                  onClick={() => setSelectedSha(c.sha)}
                 >
                   <span className="commit-row-num">{i + 1}</span>
                   <span className="commit-row-sha mono">{c.sha.slice(0, 7)}</span>

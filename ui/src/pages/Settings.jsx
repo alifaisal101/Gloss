@@ -4,6 +4,14 @@ import { api } from '../api/client.js';
 const GIT_PROVIDERS = ['gitlab', 'github'];
 const LLM_PROVIDERS = ['anthropic', 'openai', 'ollama'];
 
+// Models are tied to the provider that serves them. Hosted providers get a fixed list; Ollama runs
+// arbitrary local models, so it falls back to free text. Keep in sync with LlmProvider.IsValidModel.
+const MODELS_BY_PROVIDER = {
+  anthropic: ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+  openai: ['gpt-5', 'gpt-4o', 'gpt-4-turbo'],
+  ollama: [],
+};
+
 function normalize(c) {
   return {
     gitProvider: c.gitProvider ?? 'gitlab',
@@ -39,6 +47,12 @@ export default function Settings() {
 
   function set(key, value) {
     setForm(f => ({ ...f, [key]: value }));
+    setSaved(false);
+  }
+
+  function setLlmProvider(provider) {
+    const models = MODELS_BY_PROVIDER[provider] ?? [];
+    setForm(f => ({ ...f, llmProvider: provider, llmModel: models[0] ?? '' }));
     setSaved(false);
   }
 
@@ -131,7 +145,7 @@ export default function Settings() {
           <h2>LLM Provider</h2>
           <div className="field-group">
             <Field label="Provider">
-              <select value={form.llmProvider} onChange={e => set('llmProvider', e.target.value)}>
+              <select value={form.llmProvider} onChange={e => setLlmProvider(e.target.value)}>
                 {LLM_PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </Field>
@@ -143,13 +157,29 @@ export default function Settings() {
                 placeholder="sk-ant-…"
               />
             </Field>
-            <Field label="Model" hint="e.g. claude-sonnet-4-6">
-              <input
-                type="text"
-                value={form.llmModel}
-                onChange={e => set('llmModel', e.target.value)}
-                placeholder="claude-sonnet-4-6"
-              />
+            <Field
+              label="Model"
+              hint={(MODELS_BY_PROVIDER[form.llmProvider]?.length ?? 0) > 0
+                ? 'Models served by the selected provider'
+                : 'Local model name as served by Ollama (e.g. llama3.1)'}
+            >
+              {(MODELS_BY_PROVIDER[form.llmProvider]?.length ?? 0) > 0 ? (
+                <select value={form.llmModel} onChange={e => set('llmModel', e.target.value)}>
+                  {!MODELS_BY_PROVIDER[form.llmProvider].includes(form.llmModel) && (
+                    <option value={form.llmModel}>
+                      {form.llmModel ? `${form.llmModel} (unrecognized)` : 'Select a model…'}
+                    </option>
+                  )}
+                  {MODELS_BY_PROVIDER[form.llmProvider].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={form.llmModel}
+                  onChange={e => set('llmModel', e.target.value)}
+                  placeholder="llama3.1"
+                />
+              )}
             </Field>
             <Field label="Enable reasoning">
               <label className="toggle">

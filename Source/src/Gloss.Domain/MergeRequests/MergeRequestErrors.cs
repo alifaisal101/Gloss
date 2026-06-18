@@ -16,6 +16,9 @@ public static class MergeRequestErrors
     public static readonly DomainError LlmProviderUnauthorized =
         new("MergeRequest.LlmProvider.Rejected", "LLM provider rejected the request. Check your API key in Settings.");
 
+    public static readonly DomainError ReviewFailed =
+        new("MergeRequest.Review.Failed", "The review could not be completed. Check the LLM provider settings and try again.");
+
     public static readonly DomainError DiffTooLarge =
         new("MergeRequest.DiffTooLarge", "Diff is too large to review automatically. Break the MR into smaller changes.");
 
