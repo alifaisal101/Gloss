@@ -84,6 +84,50 @@ export function useDeleteRepository() {
   });
 }
 
+export function useConstitution(options = {}) {
+  return useQuery({
+    queryKey: keys.constitution,
+    queryFn: api.listConstitution,
+    select: (docs) => [...docs].sort((a, b) => a.position - b.position),
+    ...options,
+  });
+}
+
+export function useAddDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ title, body, position }) => api.addDocument(title, body, position),
+    onSuccess: () => { toast.success('Document added'); qc.invalidateQueries({ queryKey: keys.constitution }); },
+    onError: (err) => toast.error('Could not add document', { description: err.message }),
+  });
+}
+
+export function useUpdateDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, title, body, position }) => api.updateDocument(id, title, body, position),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.constitution }),
+    onError: (err) => toast.error('Could not save document', { description: err.message }),
+  });
+}
+
+export function useDeleteDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteDocument(id),
+    onSuccess: () => { toast.success('Document deleted'); qc.invalidateQueries({ queryKey: keys.constitution }); },
+    onError: (err) => toast.error('Could not delete document', { description: err.message }),
+  });
+}
+
+export function useSeedProjection() {
+  return useMutation({
+    mutationFn: api.seedProjection,
+    onSuccess: () => toast.success('Projection seeded', { description: 'The reviewer now has a baseline.' }),
+    onError: (err) => toast.error('Could not seed projection', { description: err.message }),
+  });
+}
+
 export function useSaveConfig() {
   return useMutation({ mutationFn: (config) => api.updateConfig(config) });
 }

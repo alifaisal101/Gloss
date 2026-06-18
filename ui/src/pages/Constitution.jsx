@@ -1,85 +1,61 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api/client.js';
+import { useState } from 'react';
+import { Plus, ScrollText, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  useConstitution, useAddDocument, useUpdateDocument, useDeleteDocument, useSeedProjection,
+} from '../api/queries.js';
+import Button from '../components/ui/Button.jsx';
+import Skeleton from '../components/ui/Skeleton.jsx';
+import EmptyState from '../components/ui/EmptyState.jsx';
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 
 export default function Constitution() {
-  const [docs, setDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const docsQuery = useConstitution();
+  const docs = docsQuery.data ?? [];
+  const addDoc = useAddDocument();
+  const updateDoc = useUpdateDocument();
+  const deleteDoc = useDeleteDocument();
+  const seed = useSeedProjection();
+
   const [editingId, setEditingId] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [seedDone, setSeedDone] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  useEffect(() => {
-    api.listConstitution()
-      .then(d => setDocs(d.sort((a, b) => a.position - b.position)))
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, []);
-
-  async function handleAdd(title, body) {
-    const added = await api.addDocument(title, body, docs.length);
-    setDocs(d => [...d, added]);
-    setAdding(false);
+  function handleAdd(title, body) {
+    return addDoc.mutateAsync({ title, body, position: docs.length }).then(() => setAdding(false));
   }
 
-  async function handleUpdate(doc, title, body) {
-    const updated = await api.updateDocument(doc.id, title, body, doc.position);
-    setDocs(d => d.map(x => x.id === doc.id ? updated : x));
-    setEditingId(null);
+  function handleUpdate(doc, title, body) {
+    return updateDoc.mutateAsync({ id: doc.id, title, body, position: doc.position }).then(() => setEditingId(null));
   }
 
-  async function handleDelete(id) {
-    await api.deleteDocument(id);
-    setDocs(d => d.filter(x => x.id !== id));
-  }
-
-  async function handleMove(id, dir) {
-    const sorted = [...docs].sort((a, b) => a.position - b.position);
-    const idx = sorted.findIndex(d => d.id === id);
+  function handleMove(id, dir) {
+    const idx = docs.findIndex((d) => d.id === id);
     const swapIdx = idx + dir;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
-    const reordered = [...sorted];
+    if (swapIdx < 0 || swapIdx >= docs.length) return;
+    const reordered = [...docs];
     [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-
-    const updated = await Promise.all(
-      reordered.map((doc, i) =>
-        doc.position !== i
-          ? api.updateDocument(doc.id, doc.title, doc.body, i)
-          : Promise.resolve({ ...doc, position: i }),
-      ),
+    Promise.all(
+      reordered
+        .map((doc, i) => (doc.position !== i
+          ? updateDoc.mutateAsync({ id: doc.id, title: doc.title, body: doc.body, position: i })
+          : null))
+        .filter(Boolean),
     );
-    setDocs(updated.sort((a, b) => a.position - b.position));
   }
 
-  async function handleSeedProjection() {
-    setSeeding(true);
-    setSeedDone(false);
-    try {
-      await api.seedProjection();
-      setSeedDone(true);
-    } finally {
-      setSeeding(false);
-    }
-  }
-
-  if (loading) return <div className="loading">Loading…</div>;
-  if (error) return <div className="error">Failed to load: {error.message}</div>;
-
-  const sorted = [...docs].sort((a, b) => a.position - b.position);
+  const docToDelete = docs.find((d) => d.id === confirmDeleteId);
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Constitution</h1>
         <div className="page-actions">
-          <button className="btn-ghost" onClick={() => { setAdding(true); setEditingId(null); }}>
-            + Add Document
-          </button>
-          <button className="btn" onClick={handleSeedProjection} disabled={seeding || docs.length === 0}>
-            {seeding ? 'Seeding…' : seedDone ? 'Seeded ✓' : 'Seed Projection'}
-          </button>
+          <Button variant="ghost" icon={Plus} onClick={() => { setAdding(true); setEditingId(null); }}>
+            Add Document
+          </Button>
+          <Button onClick={() => seed.mutate()} loading={seed.isPending} disabled={seed.isPending || docs.length === 0}>
+            Seed Projection
+          </Button>
         </div>
       </div>
 
@@ -89,44 +65,70 @@ export default function Constitution() {
         before any events have been recorded.
       </p>
 
-      {adding && (
-        <DocForm onSubmit={handleAdd} onCancel={() => setAdding(false)} />
+      {docsQuery.isError && (
+        <div className="banner banner-error">
+          <AlertCircle size={16} aria-hidden="true" />
+          <span>{docsQuery.error.message}</span>
+          <Button variant="ghost" size="sm" onClick={() => docsQuery.refetch()}>Retry</Button>
+        </div>
       )}
 
-      <div className="doc-list">
-        {sorted.map((doc, idx) => (
-          <div key={doc.id} className="doc-card">
-            {editingId === doc.id ? (
-              <DocForm
-                initial={doc}
-                onSubmit={(title, body) => handleUpdate(doc, title, body)}
-                onCancel={() => setEditingId(null)}
-              />
-            ) : (
-              <>
-                <div className="doc-card-header">
-                  <div className="doc-order-buttons">
-                    <button onClick={() => handleMove(doc.id, -1)} disabled={idx === 0} title="Move up">↑</button>
-                    <button onClick={() => handleMove(doc.id, 1)} disabled={idx === sorted.length - 1} title="Move down">↓</button>
-                  </div>
-                  <h3 className="doc-title">{doc.title}</h3>
-                  <div className="doc-actions">
-                    <button className="btn-ghost" onClick={() => { setEditingId(doc.id); setAdding(false); }}>Edit</button>
-                    <button className="btn-ghost btn-danger" onClick={() => handleDelete(doc.id)}>Delete</button>
-                  </div>
-                </div>
-                <pre className="doc-body">{doc.body}</pre>
-              </>
-            )}
-          </div>
-        ))}
+      {adding && <DocForm onSubmit={handleAdd} onCancel={() => setAdding(false)} />}
 
-        {docs.length === 0 && !adding && (
-          <div className="empty">
-            No constitution documents yet. Add review guidelines, coding standards, or architecture policies.
-          </div>
-        )}
-      </div>
+      {docsQuery.isLoading ? (
+        <DocListSkeleton />
+      ) : docs.length === 0 && !adding && !docsQuery.isError ? (
+        <EmptyState
+          icon={ScrollText}
+          title="No constitution documents yet"
+          description="Add review guidelines, coding standards, or architecture policies the reviewer should always follow."
+          action={<Button icon={Plus} onClick={() => setAdding(true)}>Add Document</Button>}
+        />
+      ) : (
+        <div className="doc-list">
+          {docs.map((doc, idx) => (
+            <div key={doc.id} className="doc-card">
+              {editingId === doc.id ? (
+                <DocForm
+                  initial={doc}
+                  onSubmit={(title, body) => handleUpdate(doc, title, body)}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <>
+                  <div className="doc-card-header">
+                    <div className="doc-order-buttons">
+                      <button onClick={() => handleMove(doc.id, -1)} disabled={idx === 0} title="Move up" aria-label="Move up">
+                        <ChevronUp size={14} />
+                      </button>
+                      <button onClick={() => handleMove(doc.id, 1)} disabled={idx === docs.length - 1} title="Move down" aria-label="Move down">
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                    <h3 className="doc-title">{doc.title}</h3>
+                    <div className="doc-actions">
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingId(doc.id); setAdding(false); }}>Edit</Button>
+                      <Button variant="dangerGhost" size="sm" onClick={() => setConfirmDeleteId(doc.id)}>Delete</Button>
+                    </div>
+                  </div>
+                  <pre className="doc-body">{doc.body}</pre>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        title="Delete document?"
+        description={docToDelete ? `“${docToDelete.title}” will no longer be included in reviews.` : ''}
+        confirmLabel="Delete"
+        destructive
+        loading={deleteDoc.isPending}
+        onConfirm={() => deleteDoc.mutate(confirmDeleteId, { onSuccess: () => setConfirmDeleteId(null) })}
+      />
     </div>
   );
 }
@@ -153,22 +155,37 @@ function DocForm({ initial, onSubmit, onCancel }) {
         className="doc-form-title"
         placeholder="Document title (e.g. Code Review Guidelines)"
         value={title}
-        onChange={e => setTitle(e.target.value)}
+        onChange={(e) => setTitle(e.target.value)}
         autoFocus
       />
       <textarea
         className="doc-form-body"
         placeholder="Document content — guidelines, standards, policies…"
         value={body}
-        onChange={e => setBody(e.target.value)}
+        onChange={(e) => setBody(e.target.value)}
         rows={10}
       />
       <div className="form-actions">
-        <button className="btn" onClick={handleSubmit} disabled={saving || !title.trim() || !body.trim()}>
-          {saving ? 'Saving…' : initial ? 'Save' : 'Add'}
-        </button>
-        <button className="btn-ghost" onClick={onCancel}>Cancel</button>
+        <Button onClick={handleSubmit} loading={saving} disabled={saving || !title.trim() || !body.trim()}>
+          {initial ? 'Save' : 'Add'}
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
       </div>
+    </div>
+  );
+}
+
+function DocListSkeleton() {
+  return (
+    <div className="doc-list">
+      {[0, 1].map((i) => (
+        <div className="doc-card" key={i}>
+          <div className="doc-card-header">
+            <Skeleton width="30%" height={16} />
+          </div>
+          <Skeleton width="100%" height={60} radius={6} style={{ marginTop: 12 }} />
+        </div>
+      ))}
     </div>
   );
 }
