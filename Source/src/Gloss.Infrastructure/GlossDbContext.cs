@@ -13,6 +13,7 @@ public sealed class GlossDbContext(DbContextOptions<GlossDbContext> options) : M
     public DbSet<Config> Configs => Set<Config>();
     public DbSet<Repository> Repositories => Set<Repository>();
     public DbSet<MergeRequest> MergeRequests => Set<MergeRequest>();
+    public DbSet<IgnoredMergeRequest> IgnoredMergeRequests => Set<IgnoredMergeRequest>();
     public DbSet<MrReview> MrReviews => Set<MrReview>();
     public DbSet<DraftComment> DraftComments => Set<DraftComment>();
     public DbSet<EventRecord> Events => Set<EventRecord>();

@@ -1,6 +1,7 @@
 using BuildingBlocks.Infrastructure.Api.Responses;
 using Gloss.Application.MergeRequests.DeleteMergeRequest;
 using Gloss.Application.MergeRequests.GetMergeRequest;
+using Gloss.Application.MergeRequests.IgnoreMergeRequest;
 using Gloss.Application.MergeRequests.ListAllMergeRequests;
 using Gloss.Application.MergeRequests.ListMergeRequests;
 using Gloss.Application.MergeRequests.PullMergeRequests;
@@ -61,6 +62,16 @@ public static class MergeRequestEndpoints
         app.MapDelete("/api/merge-requests/{mrId:guid}", async (
             Guid mrId,
             [FromServices] DeleteMergeRequestHandler handler,
+            HttpContext ctx,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(mrId, cancellationToken).ConfigureAwait(false);
+            return result.ToNoContent(ctx);
+        }).WithTags("MergeRequests");
+
+        app.MapPost("/api/merge-requests/{mrId:guid}/ignore", async (
+            Guid mrId,
+            [FromServices] IgnoreMergeRequestHandler handler,
             HttpContext ctx,
             CancellationToken cancellationToken) =>
         {

@@ -31,6 +31,7 @@ public static class GlossInfrastructureServices
         services.AddScoped<IEventStore, GlossEventStore>();
         services.AddScoped<IReviewerProjectionRepository, ReviewerProjectionRepository>();
         services.AddScoped<IMrReviewRepository, MrReviewRepository>();
+        services.AddScoped<IIgnoredMergeRequestRepository, IgnoredMergeRequestRepository>();
         services.AddScoped<IProjectionEngine, AnthropicProjectionEngine>();
         services.AddScoped<IRepoManager, RepoManager>();
         services.AddHttpClient<IGitClient, GitLabClient>();

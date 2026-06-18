@@ -10,6 +10,7 @@ namespace Gloss.Application.MergeRequests.PullMergeRequests;
 public sealed class PullMergeRequestsHandler(
     IRepositoryRepository repositoryRepository,
     IMergeRequestRepository mergeRequestRepository,
+    IIgnoredMergeRequestRepository ignoredMergeRequestRepository,
     IMrCommitRepository commitRepository,
     IGitClient gitClient,
     IJobScheduler jobScheduler,
@@ -32,10 +33,12 @@ public sealed class PullMergeRequestsHandler(
 
         var existingMrs = await mergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
         var existingByIid = existingMrs.ToDictionary(mr => mr.ProviderIid);
+        var ignored = await ignoredMergeRequestRepository.ListByRepositoryAsync(repositoryId, cancellationToken).ConfigureAwait(false);
+        var ignoredIids = ignored.Select(i => i.ProviderIid).ToHashSet();
         var remoteIids = remoteMrs.Select(r => r.Iid).ToHashSet();
         var newReviews = new List<MrReview>();
 
-        foreach (var remote in remoteMrs)
+        foreach (var remote in remoteMrs.Where(remote => !ignoredIids.Contains(remote.Iid)))
             newReviews.AddRange(await ProcessOpenMrAsync(repository, remote, existingByIid, cancellationToken).ConfigureAwait(false));
 
         await UpdateDisappearedMrStatusesAsync(repository, existingMrs, remoteIids, cancellationToken).ConfigureAwait(false);

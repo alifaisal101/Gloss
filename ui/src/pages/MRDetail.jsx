@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Trash2, Sparkles, Send, AlertCircle, Check } from 'lucide-react';
+import { Trash2, EyeOff, Sparkles, Send, AlertCircle, Check } from 'lucide-react';
 import {
-  useMr, useReviewMr, usePublishMr, useDeleteMr,
+  useMr, useReviewMr, usePublishMr, useDeleteMr, useIgnoreMr,
   useAddComment, useEditComment, useDeleteComment,
 } from '../api/queries.js';
 import DiffView from '../components/DiffView.jsx';
@@ -19,6 +19,7 @@ export default function MRDetail() {
   const [selectedSha, setSelectedSha] = useState(null);
   const [commitsExpanded, setCommitsExpanded] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmIgnore, setConfirmIgnore] = useState(false);
 
   const mrQuery = useMr(id, {
     refetchInterval: (q) => (q.state.data?.state === 'Reviewing' ? 4000 : false),
@@ -26,6 +27,7 @@ export default function MRDetail() {
   const review = useReviewMr(id);
   const publish = usePublishMr(id);
   const deleteMr = useDeleteMr();
+  const ignoreMr = useIgnoreMr();
   const addComment = useAddComment(id);
   const editComment = useEditComment(id);
   const deleteComment = useDeleteComment(id);
@@ -104,8 +106,14 @@ export default function MRDetail() {
                 Publish to GitLab
               </Button>
             )}
+            <Button variant="ghost" size="sm" icon={EyeOff} onClick={() => setConfirmIgnore(true)}
+              loading={ignoreMr.isPending}
+              disabled={deleteMr.isPending || isReviewing || publish.isPending}
+              title="Hide this MR and stop it from being pulled again">
+              Ignore
+            </Button>
             <Button variant="dangerGhost" size="sm" icon={Trash2} onClick={() => setConfirmDelete(true)}
-              disabled={deleteMr.isPending || isReviewing || publish.isPending}>
+              disabled={deleteMr.isPending || ignoreMr.isPending || isReviewing || publish.isPending}>
               Delete
             </Button>
           </div>
@@ -204,6 +212,16 @@ export default function MRDetail() {
         destructive
         loading={deleteMr.isPending}
         onConfirm={() => deleteMr.mutate(id, { onSuccess: () => navigate('/') })}
+      />
+
+      <ConfirmDialog
+        open={confirmIgnore}
+        onOpenChange={setConfirmIgnore}
+        title="Ignore merge request?"
+        description={`“${mr.title}” will be hidden and won’t be pulled again, even if it stays open on your Git platform.`}
+        confirmLabel="Ignore"
+        loading={ignoreMr.isPending}
+        onConfirm={() => ignoreMr.mutate(id, { onSuccess: () => navigate('/') })}
       />
     </div>
   );
