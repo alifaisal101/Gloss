@@ -30,8 +30,11 @@ internal sealed partial class AnthropicApiClient(
             ? configuration["Anthropic:DefaultModel"]!
             : config.LlmModel;
         var apiVersion = configuration["Anthropic:ApiVersion"]!;
+        var useAdaptiveThinking = configuration.GetSection("Anthropic:AdaptiveThinkingModels")
+            .GetChildren()
+            .Any(c => string.Equals(c.Value, model, StringComparison.Ordinal));
 
-        var requestBody = BuildRequest(model, systemPrompt, messages, tools, config);
+        var requestBody = BuildRequest(model, systemPrompt, messages, tools, config, useAdaptiveThinking);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("v1/messages", UriKind.Relative));
         request.Headers.Add("x-api-key", apiKey);
@@ -65,7 +68,8 @@ internal sealed partial class AnthropicApiClient(
         string systemPrompt,
         IReadOnlyList<ClaudeMessage> messages,
         IReadOnlyList<ClaudeToolDefinition> tools,
-        Config config)
+        Config config,
+        bool useAdaptiveThinking)
     {
         var apiMessages = messages.Select(m => new
         {
@@ -80,28 +84,39 @@ internal sealed partial class AnthropicApiClient(
             input_schema = JsonSerializer.Deserialize<JsonElement>(t.InputSchemaJson, SerializerOptions)
         }).ToArray();
 
+        object? thinking = null;
+        object? outputConfig = null;
         if (config.LlmReasoningEnabled)
         {
-            return new
+            if (useAdaptiveThinking)
             {
-                model,
-                max_tokens = config.LlmMaxTokens,
-                thinking = new { type = "enabled", budget_tokens = config.LlmThinkingBudget },
-                system = systemPrompt,
-                tools = apiTools,
-                messages = apiMessages
-            };
+                thinking = new { type = "adaptive" };
+                outputConfig = new { effort = EffortFor(config.LlmThinkingBudget) };
+            }
+            else
+            {
+                thinking = new { type = "enabled", budget_tokens = config.LlmThinkingBudget };
+            }
         }
 
         return new
         {
             model,
             max_tokens = config.LlmMaxTokens,
+            thinking,
+            output_config = outputConfig,
             system = systemPrompt,
             tools = apiTools,
             messages = apiMessages
         };
     }
+
+    private static string EffortFor(int thinkingBudget) => thinkingBudget switch
+    {
+        <= 8000 => "low",
+        <= 20000 => "medium",
+        _ => "high",
+    };
 
     private static object SerializeContent(IClaudeContent content) => content switch
     {
