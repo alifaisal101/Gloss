@@ -370,6 +370,7 @@ repo-cache
 **/dist/
 **/.vite/
 .env.local
+Source/src/Gloss.Api/wwwroot/
 .env.development.local
 .env.test.local
 .env.production.local
