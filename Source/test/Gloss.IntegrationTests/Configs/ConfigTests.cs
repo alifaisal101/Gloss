@@ -58,6 +58,35 @@ public sealed class ConfigTests(GlossApiFactory factory) : IClassFixture<GlossAp
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // Production bug: LlmModel was saved with no validation, so "claude-opus-4.8" (dot instead of
+    // hyphen — an unknown id) was accepted and then 404'd on every call. A model must be validated
+    // *against the selected provider*: only valid for the provider that actually serves it. The two
+    // cross-provider cases (an OpenAI model under anthropic, a Claude model under openai) are what
+    // "tie the model to the provider" means.
+    [Theory]
+    [InlineData("anthropic", "claude-opus-4.8")]
+    [InlineData("anthropic", "gpt-4o")]
+    [InlineData("anthropic", "")]
+    [InlineData("openai", "claude-opus-4-8")]
+    public async Task Put_WithModelNotValidForProvider_IsRejected(string provider, string model)
+    {
+        var response = await _client.PutAsJsonAsync("/api/config",
+            ValidConfig() with { LlmProvider = provider, LlmModel = model });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory]
+    [InlineData("anthropic", "claude-opus-4-8")]
+    [InlineData("anthropic", "claude-sonnet-4-6")]
+    public async Task Put_WithModelValidForProvider_ReturnsOk(string provider, string model)
+    {
+        var response = await _client.PutAsJsonAsync("/api/config",
+            ValidConfig() with { LlmProvider = provider, LlmModel = model });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task Get_AfterSavingConfig_SecretsAreNotExposed()
     {

@@ -62,6 +62,40 @@ public sealed class ReviewingStateTests(GlossApiFactory factory) : IClassFixture
         await firstReview;
     }
 
+    // Production bug: BeginReview commits "Reviewing" before the LLM call, but the handler only resets
+    // on repo-clone failure — an LLM failure (the 404 from the bad model) propagates and the MR is
+    // wedged in "Reviewing" forever, with no UI path back. A failed review must return to "Pending".
+    [Fact]
+    public async Task Review_WhenLlmCallFails_ResetsStateToPending()
+    {
+        var mrId = await SetupPendingMrAsync();
+        factory.ReviewProvider
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException(
+                "Response status code does not indicate success: 404 (Not Found).", null, HttpStatusCode.NotFound));
+
+        await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
+
+        var mr = await _client.GetFromJsonAsync<MrStateResponse>($"/api/merge-requests/{mrId}");
+        mr!.State.Should().Be("Pending");
+    }
+
+    // Even the failure the handler *does* catch (401/403 → LlmProviderUnauthorized) returns the error
+    // without resetting, so the MR is still stuck. Any LLM failure must leave it retriable.
+    [Fact]
+    public async Task Review_WhenLlmUnauthorized_ResetsStateToPending()
+    {
+        var mrId = await SetupPendingMrAsync();
+        factory.ReviewProvider
+            .Setup(p => p.ReviewAsync(It.IsAny<ReviewContext>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Unauthorized", null, HttpStatusCode.Unauthorized));
+
+        await _client.PostAsync($"/api/merge-requests/{mrId}/review", null);
+
+        var mr = await _client.GetFromJsonAsync<MrStateResponse>($"/api/merge-requests/{mrId}");
+        mr!.State.Should().Be("Pending");
+    }
+
     private async Task<Guid> SetupPendingMrAsync()
     {
         await SaveConfig(["group/project-a"]);
