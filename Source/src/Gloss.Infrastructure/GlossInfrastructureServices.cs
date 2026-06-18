@@ -2,6 +2,7 @@ using BuildingBlocks.Application.EventSourcing;
 using BuildingBlocks.Infrastructure.EfCore;
 using BuildingBlocks.Infrastructure.Events;
 using BuildingBlocks.Infrastructure.Persistence;
+using Gloss.Application.Llm;
 using Gloss.Application.MergeRequests;
 using Gloss.Domain.MergeRequests;
 using Gloss.Application.Projection;
@@ -39,6 +40,7 @@ public static class GlossInfrastructureServices
             client.BaseAddress = new Uri(configuration["Anthropic:BaseUrl"]!));
         services.AddSingleton<IReviewFileSystem, RepoFileSystem>();
         services.AddScoped<IReviewProvider, AnthropicReviewProvider>();
+        services.AddSingleton<ILlmModelCatalog, LlmModelCatalog>();
         return services;
     }
 }

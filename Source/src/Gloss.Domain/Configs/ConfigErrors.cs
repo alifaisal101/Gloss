@@ -13,6 +13,9 @@ public static class ConfigErrors
     public static readonly DomainError InvalidLlmModel =
         new("Config.Validation.InvalidLlmModel", "The model is not valid for the selected LLM provider.");
 
+    public static readonly DomainError MaxTokensExceedsModelLimit =
+        new("Config.Validation.MaxTokensExceedsModelLimit", "Max tokens exceeds the selected model's maximum output tokens.");
+
     public static readonly DomainError InvalidGitBaseUrl =
         new("Config.Validation.InvalidGitBaseUrl", "Git base URL must be a valid absolute URL.");
 

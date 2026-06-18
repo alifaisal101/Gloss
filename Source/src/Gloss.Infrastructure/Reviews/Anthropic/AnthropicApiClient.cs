@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using BuildingBlocks.Domain.Abstractions;
+using Gloss.Application.Llm;
 using Gloss.Domain.Configs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ internal sealed partial class AnthropicApiClient(
     IConfigRepository configRepository,
     ISecretEncryptor encryptor,
     IConfiguration configuration,
+    ILlmModelCatalog modelCatalog,
     ILogger<AnthropicApiClient> logger) : IClaudeApiClient
 {
     public async Task<ClaudeResponse> SendAsync(
@@ -30,16 +32,14 @@ internal sealed partial class AnthropicApiClient(
             ? configuration["Anthropic:DefaultModel"]!
             : config.LlmModel;
         var apiVersion = configuration["Anthropic:ApiVersion"]!;
-        var useAdaptiveThinking = configuration.GetSection("Anthropic:AdaptiveThinkingModels")
-            .GetChildren()
-            .Any(c => string.Equals(c.Value, model, StringComparison.Ordinal));
+        var useAdaptiveThinking = modelCatalog.UsesAdaptiveThinking(model);
 
         var requestBody = BuildRequest(model, systemPrompt, messages, tools, config, useAdaptiveThinking);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("v1/messages", UriKind.Relative));
         request.Headers.Add("x-api-key", apiKey);
         request.Headers.Add("anthropic-version", apiVersion);
-        if (config.LlmReasoningEnabled)
+        if (config.LlmReasoningEnabled && !useAdaptiveThinking)
             request.Headers.Add("anthropic-beta", "interleaved-thinking-2025-05-14");
         request.Content = JsonContent.Create(requestBody, options: SerializerOptions);
 

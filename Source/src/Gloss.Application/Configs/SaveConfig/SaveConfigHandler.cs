@@ -4,6 +4,7 @@ using BuildingBlocks.Domain.Errors;
 using BuildingBlocks.Domain.Models.Secrets;
 using BuildingBlocks.Domain.Results;
 using Gloss.Application.Jobs;
+using Gloss.Application.Llm;
 using Gloss.Domain.Configs;
 using Gloss.Domain.Repositories;
 
@@ -14,7 +15,8 @@ public sealed class SaveConfigHandler(
     IRepositoryRepository repositoryRepository,
     IDomainContext domainContext,
     ISecretEncryptor encryptor,
-    IJobScheduler jobScheduler)
+    IJobScheduler jobScheduler,
+    ILlmModelCatalog modelCatalog)
 {
     public async Task<VoidResult> HandleAsync(SaveConfigCommand command, CancellationToken cancellationToken)
     {
@@ -30,6 +32,10 @@ public sealed class SaveConfigHandler(
 
         if (!llmProviderResult.Value.IsValidModel(command.LlmModel))
             return ConfigErrors.InvalidLlmModel;
+
+        var maxOutputTokens = modelCatalog.MaxOutputTokens(command.LlmModel);
+        if (maxOutputTokens is not null && command.LlmMaxTokens > maxOutputTokens)
+            return ConfigErrors.MaxTokensExceedsModelLimit;
 
         var existing = await repository.FindAsync(cancellationToken).ConfigureAwait(false);
 
