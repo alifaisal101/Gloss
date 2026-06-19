@@ -18,6 +18,7 @@ public static class MergeRequestEndpoints
     public static IEndpointRouteBuilder MapMergeRequestEndpoints(this IEndpointRouteBuilder app)
     {
         MapMrRoutes(app);
+        MapIgnoredMergeRequestRoutes(app);
         MapRepositoryRoutes(app);
         return app;
     }
@@ -71,6 +72,10 @@ public static class MergeRequestEndpoints
             return result.ToNoContent(ctx);
         }).WithTags("MergeRequests");
 
+    }
+
+    private static void MapIgnoredMergeRequestRoutes(IEndpointRouteBuilder app)
+    {
         app.MapPost("/api/merge-requests/{mrId:guid}/ignore", async (
             Guid mrId,
             [FromServices] IgnoreMergeRequestHandler handler,
