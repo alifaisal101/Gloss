@@ -3,7 +3,9 @@ using Gloss.Application.MergeRequests.DeleteMergeRequest;
 using Gloss.Application.MergeRequests.GetMergeRequest;
 using Gloss.Application.MergeRequests.IgnoreMergeRequest;
 using Gloss.Application.MergeRequests.ListAllMergeRequests;
+using Gloss.Application.MergeRequests.ListIgnoredMergeRequests;
 using Gloss.Application.MergeRequests.ListMergeRequests;
+using Gloss.Application.MergeRequests.UnignoreMergeRequest;
 using Gloss.Application.MergeRequests.PullMergeRequests;
 using Gloss.Application.Reviews.PublishMergeRequest;
 using Gloss.Application.Reviews.ReviewMergeRequest;
@@ -76,6 +78,24 @@ public static class MergeRequestEndpoints
             CancellationToken cancellationToken) =>
         {
             var result = await handler.HandleAsync(mrId, cancellationToken).ConfigureAwait(false);
+            return result.ToNoContent(ctx);
+        }).WithTags("MergeRequests");
+
+        app.MapGet("/api/ignored-merge-requests", async (
+            [FromServices] ListIgnoredMergeRequestsHandler handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(cancellationToken).ConfigureAwait(false);
+            return Results.Ok(result);
+        }).WithTags("MergeRequests");
+
+        app.MapDelete("/api/ignored-merge-requests/{ignoredId:guid}", async (
+            Guid ignoredId,
+            [FromServices] UnignoreMergeRequestHandler handler,
+            HttpContext ctx,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(ignoredId, cancellationToken).ConfigureAwait(false);
             return result.ToNoContent(ctx);
         }).WithTags("MergeRequests");
     }

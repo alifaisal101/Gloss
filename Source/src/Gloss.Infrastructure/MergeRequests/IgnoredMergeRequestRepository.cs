@@ -14,6 +14,11 @@ internal sealed class IgnoredMergeRequestRepository(GlossDbContext db, IDomainCo
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<IgnoredMergeRequest>> ListAllAsync(CancellationToken cancellationToken) =>
+        await DbContext.Set<IgnoredMergeRequest>()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<IgnoredMergeRequest?> FindAsync(Guid repositoryId, int providerIid, CancellationToken cancellationToken) =>
         await DbContext.Set<IgnoredMergeRequest>()
             .FirstOrDefaultAsync(i => i.RepositoryId == repositoryId && i.ProviderIid == providerIid, cancellationToken)
