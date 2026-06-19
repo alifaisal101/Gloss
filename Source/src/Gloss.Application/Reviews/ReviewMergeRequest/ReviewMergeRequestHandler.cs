@@ -88,6 +88,8 @@ public sealed partial class ReviewMergeRequestHandler(
             var dc = DraftComment.Create(reviewId, comment.FilePath, comment.Line, comment.Body, comment.Reasoning);
             if (dc.IsSuccess)
                 domainContext.Save<DraftComment, Guid>(dc.Value);
+            else
+                LogCommentDropped(logger, comment.FilePath, comment.Line, dc.Error.Code);
         }
     }
 
@@ -96,4 +98,7 @@ public sealed partial class ReviewMergeRequestHandler(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Review failed for merge request {MergeRequestId}; resetting to Pending")]
     private static partial void LogReviewFailed(ILogger logger, Guid mergeRequestId, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Dropped review comment for {FilePath}:{Line} — {ErrorCode}")]
+    private static partial void LogCommentDropped(ILogger logger, string filePath, int line, string errorCode);
 }

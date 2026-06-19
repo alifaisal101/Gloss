@@ -1,13 +1,24 @@
 using System.Text.Json;
 using Gloss.Application.Reviews;
+using Microsoft.Extensions.Logging;
 
 namespace Gloss.Infrastructure.Reviews.Anthropic;
 
-internal sealed class AnthropicReviewProvider(
+internal sealed partial class AnthropicReviewProvider(
     IClaudeApiClient claudeApiClient,
-    IReviewFileSystem reviewFileSystem) : IReviewProvider
+    IReviewFileSystem reviewFileSystem,
+    ILogger<AnthropicReviewProvider> logger) : IReviewProvider
 {
     private const int MaxToolCalls = 20;
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Review ended without calling submit_review (stop reason: {StopReason}); no comments produced")]
+    private static partial void LogEndedWithoutSubmit(ILogger logger, string? stopReason);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Review submitted {CommentCount} comment(s)")]
+    private static partial void LogSubmitted(ILogger logger, int commentCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Review hit the {MaxToolCalls}-call limit without calling submit_review; no comments produced")]
+    private static partial void LogLoopExhausted(ILogger logger, int maxToolCalls);
 
     public async Task<IReadOnlyList<ReviewComment>> ReviewAsync(ReviewContext context, CancellationToken cancellationToken)
     {
@@ -24,17 +35,27 @@ internal sealed class AnthropicReviewProvider(
                 .ConfigureAwait(false);
 
             if (!string.Equals(response.StopReason, "tool_use", StringComparison.Ordinal))
+            {
+                LogEndedWithoutSubmit(logger, response.StopReason);
                 return [];
+            }
 
             var toolUses = response.Content.OfType<ClaudeToolUseContent>().ToList();
             if (toolUses.Count == 0)
+            {
+                LogEndedWithoutSubmit(logger, response.StopReason);
                 return [];
+            }
 
             var toolResults = new List<IClaudeContent>();
             foreach (var toolUse in toolUses)
             {
                 if (string.Equals(toolUse.Name, "submit_review", StringComparison.Ordinal))
-                    return ParseComments(toolUse.InputJson);
+                {
+                    var comments = ParseComments(toolUse.InputJson);
+                    LogSubmitted(logger, comments.Count);
+                    return comments;
+                }
 
                 toolResults.Add(new ClaudeToolResultContent(toolUse.Id, ExecuteTool(toolUse, context.RepoPath)));
             }
@@ -43,6 +64,7 @@ internal sealed class AnthropicReviewProvider(
             messages.Add(new ClaudeMessage("user", toolResults));
         }
 
+        LogLoopExhausted(logger, MaxToolCalls);
         return [];
     }
 
