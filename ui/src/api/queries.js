@@ -8,6 +8,7 @@ export const keys = {
   config: ['config'],
   repositories: ['repositories'],
   constitution: ['constitution'],
+  ignoredMrs: ['ignored-mrs'],
 };
 
 export function useMrs(options = {}) {
@@ -54,8 +55,26 @@ export function useIgnoreMr() {
     onSuccess: () => {
       toast.success('Merge request ignored', { description: 'It won’t be pulled again.' });
       qc.invalidateQueries({ queryKey: keys.mrs });
+      qc.invalidateQueries({ queryKey: keys.ignoredMrs });
     },
     onError: (err) => toast.error('Could not ignore merge request', { description: err.message }),
+  });
+}
+
+export function useIgnoredMrs(options = {}) {
+  return useQuery({ queryKey: keys.ignoredMrs, queryFn: api.listIgnoredMrs, ...options });
+}
+
+export function useUnignoreMr() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.unignoreMr(id),
+    onSuccess: () => {
+      toast.success('Merge request restored', { description: 'It will be pulled again on the next poll.' });
+      qc.invalidateQueries({ queryKey: keys.ignoredMrs });
+      qc.invalidateQueries({ queryKey: keys.mrs });
+    },
+    onError: (err) => toast.error('Could not restore merge request', { description: err.message }),
   });
 }
 
