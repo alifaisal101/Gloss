@@ -97,10 +97,10 @@ internal sealed class GitLabClient(
         var results = new List<MrCommitData>(commits.Length);
         foreach (var commit in commits)
         {
-            var diffs = await SendAsync<GitLabDiffDto[]>(
+            var diffs = await FetchAllDiffsAsync(
                 $"{baseUrl}/api/v4/projects/{encoded}/repository/commits/{commit.Id}/diff",
                 token, cancellationToken).ConfigureAwait(false);
-            results.Add(new(commit.Id, commit.Title, commit.AuthorName, BuildDiff(diffs ?? [])));
+            results.Add(new(commit.Id, commit.Title, commit.AuthorName, BuildDiff(diffs)));
         }
 
         return results;
@@ -108,10 +108,27 @@ internal sealed class GitLabClient(
 
     private async Task<string> GetDiffAsync(string baseUrl, string encodedPath, int iid, string token, CancellationToken cancellationToken)
     {
-        var diffs = await SendAsync<GitLabDiffDto[]>(
+        var diffs = await FetchAllDiffsAsync(
             $"{baseUrl}/api/v4/projects/{encodedPath}/merge_requests/{iid}/diffs",
             token, cancellationToken).ConfigureAwait(false);
-        return BuildDiff(diffs ?? []);
+        return BuildDiff(diffs);
+    }
+
+    private async Task<GitLabDiffDto[]> FetchAllDiffsAsync(string diffsUrl, string token, CancellationToken cancellationToken)
+    {
+        const int perPage = 100;
+        var all = new List<GitLabDiffDto>();
+        var page = 1;
+        var hasMore = true;
+        while (hasMore)
+        {
+            var pageItems = await SendAsync<GitLabDiffDto[]>(
+                $"{diffsUrl}?per_page={perPage}&page={page}", token, cancellationToken).ConfigureAwait(false) ?? [];
+            all.AddRange(pageItems);
+            hasMore = pageItems.Length == perPage;
+            page++;
+        }
+        return all.ToArray();
     }
 
     private static string BuildDiff(GitLabDiffDto[] diffs)

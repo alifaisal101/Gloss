@@ -30,10 +30,12 @@ internal sealed class RepoManager(
             var basePath = configuration["RepoBasePath"] ?? "/repos";
             var localPath = Path.Combine(basePath, repository.Id.ToString());
             await Task.Run(() => Clone(cloneUrl, localPath, token), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => Checkout(localPath, headSha), cancellationToken).ConfigureAwait(false);
             return localPath;
         }
 
         await Task.Run(() => Fetch(repository.LocalClonePath, token), cancellationToken).ConfigureAwait(false);
+        await Task.Run(() => Checkout(repository.LocalClonePath, headSha), cancellationToken).ConfigureAwait(false);
         return repository.LocalClonePath;
     }
 
@@ -69,5 +71,11 @@ internal sealed class RepoManager(
                 new Git.UsernamePasswordCredentials { Username = "oauth2", Password = token }
         };
         Git.Commands.Fetch(repo, "origin", [], options, null);
+    }
+
+    private static void Checkout(string localPath, string headSha)
+    {
+        using var repo = new Git.Repository(localPath);
+        Git.Commands.Checkout(repo, headSha, new Git.CheckoutOptions { CheckoutModifiers = Git.CheckoutModifiers.Force });
     }
 }
