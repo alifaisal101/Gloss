@@ -10,7 +10,7 @@ import Skeleton from '../components/ui/Skeleton.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 
-const STATE_TABS = ['Pending', 'Reviewing', 'Ready', 'Published'];
+const STATE_TABS = ['Pending', 'Reviewing', 'Ready', 'Seen', 'Staged', 'Published'];
 
 export default function Dashboard() {
   const [tab, setTab] = useState('All');
@@ -36,14 +36,8 @@ export default function Dashboard() {
   const q = search.trim().toLowerCase();
   const hit = (...fields) => !q || fields.some((f) => (f ?? '').toLowerCase().includes(q));
 
-  const counts = {
-    All: mrs.length,
-    Pending: mrs.filter((m) => m.state === 'Pending').length,
-    Reviewing: mrs.filter((m) => m.state === 'Reviewing').length,
-    Ready: mrs.filter((m) => m.state === 'Ready').length,
-    Published: mrs.filter((m) => m.state === 'Published').length,
-    Ignored: ignored.length,
-  };
+  const counts = { All: mrs.length, Ignored: ignored.length };
+  for (const s of STATE_TABS) counts[s] = mrs.filter((m) => m.state === s).length;
   const tabs = ['All', ...STATE_TABS, 'Ignored'];
 
   const visibleMrs = mrs
